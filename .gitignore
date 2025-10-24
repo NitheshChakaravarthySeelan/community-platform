@@ -1,0 +1,21 @@
+# Java
+target/
+*.log
+*.class
+/.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+.next/
+dist/
+
+# Python
+__pycache__/
+.venv/
+
+# Docker
+docker-compose.override.yml
+
+# IDEs
+.vscode/
+.idea/
