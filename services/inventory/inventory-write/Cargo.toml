@@ -1,0 +1,10 @@
+[package]
+name = "inventory-write"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+opentelemetry = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.14", features = ["grpc-tonic", "trace", "metrics"] }
+opentelemetry-prometheus = "0.14"
+metrics-exporter-prometheus = "0.13"

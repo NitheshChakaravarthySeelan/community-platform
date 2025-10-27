@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-checkout-orchestrator
+  labels:
+    app: checkout-orchestrator
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: checkout-orchestrator
+  template:
+    metadata:
+      labels:
+        app: checkout-orchestrator
+    spec:
+      containers:
+        - name: checkout-orchestrator
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          resources: {}
+          env: []

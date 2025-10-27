@@ -12,3 +12,17 @@ docker-build:
    - name: Build and push images
      run: |
        echo "Add CI to build & push docker images to registry"
+       # Login to Docker Hub
+       echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+       # Build and push product-service image
+       docker build -t ${{ secrets.DOCKER_USERNAME }}/product-service:latest ./services/product-service
+       docker push ${{ secrets.DOCKER_USERNAME }}/product-service:latest
+
+       # Build and push user-service image
+       docker build -t ${{ secrets.DOCKER_USERNAME }}/user-service:latest ./services/user-service
+       docker push ${{ secrets.DOCKER_USERNAME }}/user-service:latest
+
+       # Build and push inventory-service image
+       docker build -t ${{ secrets.DOCKER_USERNAME }}/inventory-service:latest ./services/inventory-service
+       docker push ${{ secrets.DOCKER_USERNAME }}/inventory-service:latest

@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../helm-charts/product-write
+  - ../helm-charts/product-read
+  - ../helm-charts/category
+  - ../helm-charts/brand
+  - ../helm-charts/list-price
+  - ../helm-charts/discount-engine
+  - ../helm-charts/tax-calculation
+  - ../helm-charts/cart-pricing
+  - ../helm-charts/cart-snapshot
+  - ../helm-charts/order-create
+  - ../helm-charts/order-read
+  - ../helm-charts/payment-gateway
+  - ../helm-charts/wallet
+  - ../helm-charts/refund
+  - ../helm-charts/invoice
+  - ../helm-charts/user-service
+  - ../helm-charts/auth-service
+  - ../helm-charts/audit-service
+  - ../helm-charts/warehouse-sync
+  - ../helm-charts/checkout-orchestrator
+  - ../helm-charts/rec-model-service
+  - ../helm-charts/intent-parser
+  - ../helm-charts/plan-generator
+  - ../helm-charts/plan-executor
+  - ../helm-charts/inventory-read
+  - ../helm-charts/inventory-write
+  - ../helm-charts/search-index
+  - ../helm-charts/search-query
+  - ../helm-charts/email-service
+  - ../helm-charts/sms-service
+  - ../helm-charts/push-service
+  - ../helm-charts/metrics
+  - ../helm-charts/tracing
+  - ../helm-charts/log-forwarder
+  - ../helm-charts/config
+  - ../helm-charts/gateway-bff
+  - ../helm-charts/cart-crud

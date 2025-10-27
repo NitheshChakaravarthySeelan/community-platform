@@ -2,16 +2,24 @@
 target/
 *.log
 *.class
-/.mvn/wrapper/maven-wrapper.jar
+!/.mvn/wrapper/maven-wrapper.jar
 
 # Node
 node_modules/
 .next/
 dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Python
 __pycache__/
+*.pyc
 .venv/
+venv/
+env/
+.env
 
 # Docker
 docker-compose.override.yml
@@ -19,3 +27,20 @@ docker-compose.override.yml
 # IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+
+# General
+.DS_Store
+/build
+/out

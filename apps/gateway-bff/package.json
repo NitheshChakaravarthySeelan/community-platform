@@ -1,23 +1,30 @@
 {
-"name": "gateway-bff",
-"version": "0.1.0",
-"private": true,
-"scripts": {
- "dev": "next dev -p 3000",
- "build": "next build",
- "start": "next start -p 3000",
- "lint": "next lint"
-},
-"dependencies": {
- "next": "14.0.0",
- "react": "18.2.0",
- "react-dom": "18.2.0",
- "axios": "^1.4.0",
- "jsonwebtoken": "^9.0.0"
-},
-"devDependencies": {
- "typescript": "^5.2.0",
- "eslint": "^8.0.0",
- "prettier": "^2.8.0"
-}
+  "name": "gateway-bff",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "build:proto": "make generate-proto"
+  },
+  "dependencies": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "next": "16.0.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-node": "^0.51.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.44.0",
+    "prom-client": "^15.1.2"
+  },
+  "devDependencies": {
+    "babel-plugin-react-compiler": "1.0.0",
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.0"
+  }
 }

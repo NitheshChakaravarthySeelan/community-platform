@@ -1,0 +1,29 @@
+{
+  "name": "community-platform",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.3",
+    "grpc-tools": "^1.12.4",
+    "ts-protoc-gen": "^0.15.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "pnpm lint -- --fix",
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": "prettier --write --ignore-unknown"
+  },
+  "packageManager": "pnpm@10.19.0",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "shared/libs/*"
+  ]
+}

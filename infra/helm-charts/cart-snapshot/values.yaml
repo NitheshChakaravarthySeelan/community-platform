@@ -1,0 +1,20 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/your-username/community-platform/java-cart-snapshot
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+resources: {}
+
+env: []
