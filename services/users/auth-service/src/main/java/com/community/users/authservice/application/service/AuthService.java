@@ -72,24 +72,28 @@ public class AuthService {
         return userRepository.save(user);
     }
 
-    public boolean validateToken(String token) {
+    public User validateToken(String token) throws Exception {
         try {
             if (token == null || token.isEmpty()) {
-                return false;
+                throw new Exception("Invalid token");
             }
 
             String username = jwtService.extractUsername(token);
             if (username == null) {
-                return false;
+                throw new Exception("Invalid token");
             }
 
             // The "security guard" flow: load the official record (UserDetails) from the directory (UserDetailsService)
             // and validate the token against that official record.
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            User user = (User) userDetailsService.loadUserByUsername(username); // Cast to User
             
-            return jwtService.isTokenValid(token, userDetails);
+            if (jwtService.isTokenValid(token, user)) {
+                return user;
+            } else {
+                throw new Exception("Invalid token");
+            }
         } catch (Exception e) {
-            return false;
+            throw new Exception("Error validating token");
         }
     }
 }
