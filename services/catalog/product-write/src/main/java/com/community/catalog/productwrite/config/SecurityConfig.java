@@ -1,4 +1,4 @@
-package com.community.catalog.productread.config;
+package com.community.catalog.productwrite.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

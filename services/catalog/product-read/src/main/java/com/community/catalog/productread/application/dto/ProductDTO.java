@@ -1,25 +1,25 @@
-public package com.community.catalog.productread.interfaces.dto;
+package com.community.catalog.productread.application.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+import java.math.BigDecimal;
+import java.util.Date;
+
+@Data
 @Builder
 public class ProductDTO {
     private Long id;
     private String name;
     private String description;
     private BigDecimal price;
+    private Integer quantity;
+    private String sku;
     private String imageUrl;
     private String category;
     private String manufacturer;
+    private String status;
+    private int version;
     private Date createdAt;
     private Date updatedAt;
-    private String status;
 }

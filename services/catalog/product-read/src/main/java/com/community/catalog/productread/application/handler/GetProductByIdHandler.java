@@ -20,12 +20,15 @@ public class GetProductByIdHandler {
                         .name(product.getName())
                         .description(product.getDescription())
                         .price(product.getPrice())
+                        .quantity(product.getQuantity())
+                        .sku(product.getSku())
                         .imageUrl(product.getImageUrl())
                         .category(product.getCategory())
                         .manufacturer(product.getManufacturer())
+                        .status(product.getStatus())
+                        .version(product.getVersion())
                         .createdAt(product.getCreatedAt())
                         .updatedAt(product.getUpdatedAt())
-                        .status(product.getStatus())
                         .build());
     }
 }
