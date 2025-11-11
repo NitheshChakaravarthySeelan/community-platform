@@ -1,1 +1,5 @@
-pnpm lint-staged
+#!/bin/sh
+# Using npx to execute pnpm. npx is part of the standard node installation
+# and is reliably found in the PATH. It will then find and run the pnpm command.
+npx pnpm lint-staged
+

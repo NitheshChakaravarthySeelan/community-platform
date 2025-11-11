@@ -29,6 +29,9 @@ docker-compose.override.yml
 .idea/
 *.swp
 *.swo
+.classpath
+.project
+.settings/
 
 # Operating System
 .DS_Store
