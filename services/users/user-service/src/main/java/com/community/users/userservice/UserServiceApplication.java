@@ -6,8 +6,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class UserServiceApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(UserServiceApplication.class, args);
+    /** Prevents instantiation. */
+    public UserServiceApplication() {
+        // Private constructor
     }
 
+    /**
+     * Main method to start the Spring Boot application.
+     *
+     * @param args Command line arguments.
+     */
+    public static void main(final String[] args) { // Made args final
+        SpringApplication.run(UserServiceApplication.class, args);
+    }
 }
