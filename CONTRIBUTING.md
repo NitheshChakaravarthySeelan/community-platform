@@ -4,10 +4,12 @@ First off, thank you for considering contributing to this project! Your help is 
 
 ## How Can I Contribute?
 
+- Follow this .md file to get more information on how to contribute [NextStep.md]
+
 ### Reporting Bugs
 
-- Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/your-username/community-platform/issues).
-- If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/your-username/community-platform/issues/new). Be sure to include a title and clear description, as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring.
+- Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/NitheshChakaravarthySeelan/community-platform/issues).
+- If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/NitheshChakaravarthySeelan/community-platform/issues/new). Be sure to include a title and clear description, as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring.
 
 ### Suggesting Enhancements
 

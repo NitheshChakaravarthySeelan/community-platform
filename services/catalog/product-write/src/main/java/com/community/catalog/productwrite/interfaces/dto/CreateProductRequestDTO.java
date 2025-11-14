@@ -29,5 +29,5 @@ public class CreateProductRequestDTO {
     private String imageUrl;
     private String category;
     private String manufacturer;
-    private String status; // Optional, will default in handler if not provided
+    private String status;
 }
