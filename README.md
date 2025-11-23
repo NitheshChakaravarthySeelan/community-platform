@@ -51,7 +51,3 @@ npm run dev
 ```
 
 Once running, the application will be available at [http://localhost:3000](http://localhost:3000).
-
-## What's Next?
-
-This is the initial "Phase 1" skeleton. From here, you can start implementing the business logic for each service and building out the UI in the Next.js application.
