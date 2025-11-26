@@ -1,21 +1,19 @@
-const { Router } = require("express");
-const { body, param } = require("express-validator");
-const { validateRequest } = require("../utils/validator");
-const { CartService } = require("../services/cart.service");
-const {
-  InMemoryCartRepository,
-} = require("../repositories/InMemoryCartRepository");
+import { Router, Request, Response } from "express";
+import { body, param } from "express-validator";
+import { validateRequest } from "../utils/validator";
+import { CartService } from "../services/cart.service";
+import { PostgresCartRepository } from "../repositories/PostgresCartRepository";
 
 const router = Router();
 
-const cartRepository = new InMemoryCartRepository();
+const cartRepository = new PostgresCartRepository();
 const cartService = new CartService(cartRepository);
 
 router.get(
   "/:userId",
   param("userId").isInt().toInt(),
   validateRequest,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const cart = await cartService.getCart(Number(req.params.userId));
       if (!cart) {
@@ -36,7 +34,7 @@ router.post(
   body("productId").isInt().toInt(),
   body("quantity").isInt({ gt: 0 }).toInt(),
   validateRequest,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const { userId } = req.params;
     const { productId, quantity } = req.body;
     try {
@@ -58,7 +56,7 @@ router.put(
   param("productId").isInt().toInt(),
   body("quantity").isInt().toInt(),
   validateRequest,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const { userId, productId } = req.params;
     const { quantity } = req.body;
     try {
@@ -69,7 +67,7 @@ router.put(
       );
       res.status(200).json(updatedCart);
     } catch (error) {
-      res.status(404).json({ message: error.message });
+      res.status(404).json({ message: (error as Error).message });
     }
   },
 );
@@ -79,7 +77,7 @@ router.delete(
   param("userId").isInt().toInt(),
   param("productId").isInt().toInt(),
   validateRequest,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const { userId, productId } = req.params;
     try {
       const updatedCart = await cartService.removeItem(
@@ -88,9 +86,9 @@ router.delete(
       );
       res.status(200).json(updatedCart);
     } catch (error) {
-      res.status(404).json({ message: error.message });
+      res.status(404).json({ message: (error as Error).message });
     }
   },
 );
 
-module.exports = { cartRoutes: router };
+export { router as cartRoutes };

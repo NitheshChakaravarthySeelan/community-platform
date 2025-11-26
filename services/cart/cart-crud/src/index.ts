@@ -1,4 +1,5 @@
-const app = require("./app");
+import "dotenv/config"; // Load environment variables as early as possible
+import app from "./app"; // Use ES Module import
 
 const port = process.env.PORT || 3000;
 

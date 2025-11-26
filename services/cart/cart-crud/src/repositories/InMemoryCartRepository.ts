@@ -1,29 +1,27 @@
-const carts = [];
-let nextId = 1;
+import { Cart } from "../models/cart";
+import { CartRepository } from "./CartRepository";
 
-class InMemoryCartRepository {
-  async findByUserId(userId) {
-    const cart = carts.find((c) => c.userId === userId);
-    return cart ? { ...cart } : null;
+export class InMemoryCartRepository implements CartRepository {
+  private carts: Map<number, Cart> = new Map();
+  private nextId = 1;
+
+  async findByUserId(userId: number): Promise<Cart | null> {
+    for (const cart of this.carts.values()) {
+      if (cart.userId === userId) {
+        return cart;
+      }
+    }
+    return null;
   }
 
-  async save(cart) {
-    const existingIndex = carts.findIndex((c) => c.id === cart.id);
-
-    if (existingIndex > -1) {
-      carts[existingIndex] = { ...cart };
-      return { ...carts[existingIndex] };
+  async save(cart: Omit<Cart, "id"> | Cart): Promise<Cart> {
+    if ("id" in cart && cart.id) {
+      this.carts.set(cart.id, cart as Cart);
+      return cart as Cart;
     } else {
-      const newCart = { ...cart, id: nextId++ };
-      carts.push(newCart);
-      return { ...newCart };
+      const newCart = { ...cart, id: this.nextId++ } as Cart;
+      this.carts.set(newCart.id, newCart);
+      return newCart;
     }
   }
-
-  async clear() {
-    carts.length = 0;
-    nextId = 1;
-  }
 }
-
-module.exports = { InMemoryCartRepository };
