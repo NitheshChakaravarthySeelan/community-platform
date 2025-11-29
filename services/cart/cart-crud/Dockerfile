@@ -1,20 +1,30 @@
-FROM node:20-alpine AS builder
-
+# Stage 1: Build the application
+FROM node:18-alpine AS build
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./ # Assuming pnpm-lock.yaml exists
-RUN pnpm install --frozen-lockfile
+# Copy package management files
+COPY package.json pnpm-lock.yaml ./
 
+# Install pnpm and dependencies
+RUN npm install -g pnpm
+RUN pnpm install
+
+# Copy the rest of the source code
 COPY . .
-RUN pnpm run build # Assuming a build script for TypeScript compilation
 
-FROM node:20-alpine
+# Build the TypeScript code
+RUN pnpm build
 
+# Stage 2: Create the final, lightweight production container
+FROM node:18-alpine
 WORKDIR /app
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist # Assuming TypeScript output to dist
+# Copy dependencies and built code from the 'build' stage
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 
-EXPOSE 3000 # Or whatever port Express listens on
+# Expose the port the app runs on
+EXPOSE 3000
 
-CMD ["node", "dist/index.js"] # Assuming compiled entry point
+# Command to run the application
+CMD ["node", "dist/index.js"]
