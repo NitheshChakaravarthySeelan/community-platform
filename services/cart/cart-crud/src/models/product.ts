@@ -1,6 +1,15 @@
 export interface Product {
   id: number;
   name: string;
+  description: string;
   price: number;
-  image: string;
+  quantity: number;
+  sku: string;
+  imageUrl: string;
+  category: string;
+  manufacturer: string;
+  status: string;
+  version: number;
+  createdAt: date;
+  updatedAt: date;
 }

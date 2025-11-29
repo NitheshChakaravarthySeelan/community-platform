@@ -3,10 +3,11 @@ import { body, param } from "express-validator";
 import { validateRequest } from "../utils/validator";
 import { CartService } from "../services/cart.service";
 import { PostgresCartRepository } from "../repositories/PostgresCartRepository";
-
+import { ProductServiceAdapter } from "../adapters/ProductServiceAdapter.ts";
 const router = Router();
 
 const cartRepository = new PostgresCartRepository();
+const productServiceAdapter = new ProductServiceAdapter();
 const cartService = new CartService(cartRepository);
 
 router.get(

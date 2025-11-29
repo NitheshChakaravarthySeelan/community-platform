@@ -1,8 +1,15 @@
 import { Cart, CartDetails } from "../models/cart";
 import { CartRepository } from "../repositories/CartRepository";
+import {
+  ProductServiceAdapter,
+  Product,
+} from "./adapters/ProductServiceAdapter";
 
 export class CartService {
-  constructor(private cartRepository: CartRepository) {}
+  constructor(
+    private cartRepository: CartRepository,
+    private productServiceAdapter: ProductServiceAdapter,
+  ) {}
 
   async getOrCreateCart(userId: number): Promise<Cart> {
     const existingCart = await this.cartRepository.findByUserId(userId);
@@ -28,11 +35,10 @@ export class CartService {
       throw new Error("Quantity must be positive.");
     }
 
-    // TODO: Call product-read service to get product details
-    // const product: Product = await productReadService.getProduct(productId);
-    // if (!product) {
-    //   throw new Error('Product not found.');
-    // }
+    const product: Product = await productReadService.getProductById(productId);
+    if (!product) {
+      throw new Error("Product not found.");
+    }
 
     const cart = await this.getOrCreateCart(userId);
     const existingItemIndex = cart.items.findIndex(
@@ -61,15 +67,16 @@ export class CartService {
     // TODO: Call cart-pricing service to get the total price
     // const totalPrice = await cartPricingService.calculateTotalPrice(cart.items);
 
-    // TODO: Enrich cart items with product details from product-read service
     const enrichedItems = await Promise.all(
       cart.items.map(async (item) => {
-        // const product = await productReadService.getProduct(item.productId);
+        const product = await this.productServiceAdapter.getProductById(
+          item.productId,
+        );
         return {
           ...item,
-          name: "mock product name", // product.name,
-          price: 10, // product.price,
-          image: "mock-image.png", // product.image
+          name: product.name,
+          price: product.price,
+          image: product.imageUrl,
         };
       }),
     );
