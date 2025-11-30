@@ -1,5 +1,127 @@
 version: '3.8'
 services:
+  user-service:
+    build:
+      context: ../../services/users/user-service
+      dockerfile: Dockerfile
+    container_name: user_service_dev
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  product-read:
+    build:
+      context: ../../services/catalog/product-read
+      dockerfile: Dockerfile
+    container_name: product_read_dev
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  product-write:
+    build:
+      context: ../../services/catalog/product-write
+      dockerfile: Dockerfile
+    container_name: product_write_dev
+    depends_on:
+      - postgres
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  cart-crud:
+    build:
+      context: ../../services/cart/cart-crud
+      dockerfile: Dockerfile
+    container_name: cart_crud_dev
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3000" # Mapping to 3001 on host to avoid conflict with Grafana
+    environment:
+      - PORT=3000
+      - DB_HOST=postgres_dev
+      - DB_USER=admin
+      - DB_PASSWORD=secret
+      - DB_DATABASE=community_platform
+      - DB_PORT=5432
+
+  auth-service:
+    build:
+      context: ../../services/users/auth-service
+      dockerfile: Dockerfile
+    container_name: auth_service_dev
+    depends_on:
+      - postgres
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DB_HOST=postgres_dev
+      - DB_USER=admin
+      - DB_PASSWORD=secret
+      - DB_DATABASE=community_platform
+      - DB_PORT=5432
+      # Add JWT secrets and other auth-specific config here
+      - JWT_SECRET=your-super-secret-key # CHANGE THIS IN PRODUCTION
+      - JWT_EXPIRES_IN=1h
+
+  cart-snapshot:
+    build:
+      context: ../../services/cart/cart-snapshot
+      dockerfile: Dockerfile
+    container_name: cart_snapshot_dev
+    depends_on:
+      - postgres
+      - cart-crud # This service depends on cart-crud to get live cart data
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # This is the crucial URL for the adapter to find the cart-crud service
+      - APP_CLIENTS_CART-CRUD_URL=http://cart_crud_dev:3000
+
+  cart-pricing:
+    build:
+      context: ../../services/cart/cart-pricing
+      dockerfile: Dockerfile
+    container_name: cart_pricing_dev
+    depends_on:
+      - postgres
+      - cart-snapshot # Depends on cart-snapshot to get immutable cart data
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVER_PORT=8084
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # URL for the cart-snapshot service
+      - APP_CLIENTS_CART-SNAPSHOT_URL=http://cart_snapshot_dev:8083
+
   postgres:
     image: postgres:15
     container_name: postgres_dev

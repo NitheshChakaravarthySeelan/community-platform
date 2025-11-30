@@ -24,7 +24,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm' # Use pnpm cache
       - name: Install pnpm
-        run: npm install -g pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
@@ -105,11 +108,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'poetry'
-      - name: Install Poetry
-        run: pipx install poetry
-      - name: Install Dependencies
-        run: poetry install --no-root --no-interaction --no-ansi
+      - name: Install Poetry and Dependencies
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.0
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
       - name: Run Ruff Linter
         run: poetry run ruff check .
       - name: Run Black Formatter Check
@@ -227,7 +232,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - name: Install pnpm
-        run: npm install -g pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Build
