@@ -19,7 +19,7 @@ public class ProductDTO {
     private String category;
     private String manufacturer;
     private String status;
-    private int version;
+    private Integer version;
     private Date createdAt;
     private Date updatedAt;
 }
