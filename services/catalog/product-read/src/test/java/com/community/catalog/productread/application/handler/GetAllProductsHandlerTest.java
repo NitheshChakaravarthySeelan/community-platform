@@ -1,5 +1,6 @@
 package com.community.catalog.productread.application.handler;
 
+import com.community.catalog.productread.application.command.GetAllProductsQuery; // ADD THIS IMPORT
 import com.community.catalog.productread.application.dto.ProductDTO;
 import com.community.catalog.productread.domain.model.ProductView;
 import com.community.catalog.productread.domain.repository.ProductViewRepository;
