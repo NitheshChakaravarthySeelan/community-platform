@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.cache.annotation.CacheEvict; // <--- Add this import
 
 import java.util.Date;
 import java.util.List;
@@ -21,6 +22,7 @@ public class CreateProductHandler {
     private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "PRODUCT_MANAGER");
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true) // <--- Add this annotation
     public Product handle(CreateProductCommand command) {
         // 1. Authorize
         if (command.getUserRoles().stream().noneMatch(REQUIRED_ROLES::contains)) {
