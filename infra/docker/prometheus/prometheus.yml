@@ -9,4 +9,104 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8080']
+  - job_name: 'auth-service'
+    metrics_configs: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-service:3002']
+  - job_name: 'product-read'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['product-read:8081']
+  - job_name: 'product-write'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['product-write:8082']
+  - job_name: 'cart-crud'
+    metrics_path: '/metrics' # Node.js service uses /metrics
+    static_configs:
+      - targets: ['cart-crud:3000']
+  - job_name: 'cart-snapshot'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['cart-snapshot:8083']
+  - job_name: 'cart-pricing'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['cart-pricing:8084']
+  - job_name: 'checkout-orchestrator'
+    metrics_path: '/metrics' # Python FastAPI service uses /metrics
+    static_configs:
+      - targets: ['checkout-orchestrator:8000']
+  - job_name: 'intent-parser'
+    metrics_path: '/metrics' # Python FastAPI service uses /metrics
+    static_configs:
+      - targets: ['intent-parser:8080']
+  - job_name: 'plan-generator'
+    metrics_path: '/metrics' # Python FastAPI service uses /metrics
+    static_configs:
+      - targets: ['plan-generator:8080']
+  - job_name: 'plan-executor'
+    metrics_path: '/metrics' # Python FastAPI service uses /metrics
+    static_configs:
+      - targets: ['plan-executor:8080']
+  - job_name: 'audit-service'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['audit-service:8089']
+  - job_name: 'inventory-read'
+    metrics_path: '/metrics' # Rust Actix-web service uses /metrics
+    static_configs:
+      - targets: ['inventory-read:8080'] # Default port for inventory-read
+  - job_name: 'inventory-write'
+    metrics_path: '/metrics' # Rust Actix-web service uses /metrics
+    static_configs:
+      - targets: ['inventory-write:8080'] # Default port for inventory-write
+  - job_name: 'email-service'
+    metrics_path: '/metrics' # Go service uses /metrics
+    static_configs:
+      - targets: ['email-service:8080'] # Default port for email-service
+  - job_name: 'push-service'
+    metrics_path: '/metrics' # Go service uses /metrics
+    static_configs:
+      - targets: ['push-service:8080'] # Default port for push-service
+  - job_name: 'order-create'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['order-create:8094'] # Configured port for order-create
+  - job_name: 'order-read'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['order-read:8095'] # Configured port for order-read
+  - job_name: 'invoice'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['invoice:8096'] # Configured port for invoice
+  - job_name: 'payment-gateway'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['payment-gateway:8097'] # Configured port for payment-gateway
+  - job_name: 'refund'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['refund:8098'] # Configured port for refund
+  - job_name: 'wallet'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['wallet:8099'] # Configured port for wallet
+  - job_name: 'list-price'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['list-price:8100'] # Configured port for list-price
+  - job_name: 'discount-engine'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['discount-engine:8101'] # Configured port for discount-engine
+  - job_name: 'tax-calculation'
+    metrics_path: '/actuator/prometheus' # Spring Boot service uses /actuator/prometheus
+    static_configs:
+      - targets: ['tax-calculation:8102'] # Configured port for tax-calculation
   # Add targets for your microservices here (e.g., 'host.docker.internal:8080/actuator/prometheus' for Spring Boot)

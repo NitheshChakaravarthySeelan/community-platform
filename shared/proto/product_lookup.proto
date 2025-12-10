@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package product_lookup;
+
+option go_package = "github.com/community-platform/product_lookup;product_lookup";
+
+service ProductLookup {
+  rpc GetProductById(GetProductByIdRequest) returns (Product);
+}
+
+message GetProductByIdRequest {
+  string id = 1;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 quantity = 5;
+  string sku = 6;
+  string image_url = 7;
+  string category = 8;
+  string manufacturer = 9;
+  string status = 10;
+  int64 version = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}

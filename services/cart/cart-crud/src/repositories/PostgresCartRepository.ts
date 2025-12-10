@@ -1,5 +1,5 @@
-import { Cart } from "../models/cart";
-import { CartRepository } from "./CartRepository";
+import type { Cart } from "../models/cart";
+import type { CartRepository } from "./CartRepository";
 import { dbPool } from "../utils/db";
 
 export class PostgresCartRepository implements CartRepository {

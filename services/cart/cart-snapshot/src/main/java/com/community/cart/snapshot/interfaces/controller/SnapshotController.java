@@ -25,4 +25,10 @@ public class SnapshotController {
         // SnapshotService not compiling correctly due to its own errors.
         return new ResponseEntity<>(snapshot.getId(), HttpStatus.CREATED);
     }
+
+    @GetMapping("/{snapshotId}")
+    public ResponseEntity<UserCartSnapshot> getCartSnapshotById(@PathVariable UUID snapshotId) {
+        UserCartSnapshot snapshot = snapshotService.getSnapshotById(snapshotId);
+        return ResponseEntity.ok(snapshot);
+    }
 }

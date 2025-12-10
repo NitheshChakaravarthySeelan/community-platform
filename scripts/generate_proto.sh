@@ -30,6 +30,8 @@ case "$LANGUAGE" in
     ;;
   go)
     # Go generation
+    # Ensure Go binaries are in PATH
+    export PATH=$PATH:$HOME/go/bin
     protoc \
       -I"$PROTO_DIR" \
       --go_out="$SERVICE_PATH" \

@@ -15,7 +15,8 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "opentelemetry-instrumentation-fastapi",
-    "prometheus-client"
+    "prometheus-client",
+    "google-generativeai (>=0.7.0,<0.8.0)"
 ]
 
 [tool.poetry.dev-dependencies]
@@ -27,10 +28,7 @@ pytest = "^8.2.2"
 packages = [{include = "intent_parser", from = "src"}]
 
 [tool.poetry.scripts]
-generate-proto = "bash -c \"make -C ../../../.. generate-proto-python\""
-lint = "ruff check ."
-format = "black ."
-test = "pytest"
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package catalog_events;
+
+option java_package = "com.community.catalog.events";
+option java_outer_classname = "CatalogEventsProto";
+option go_package = "github.com/community-platform/catalog_events;catalog_events";
+
+message ProductUpdatedEvent {
+  string product_id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 quantity = 5;
+  string sku = 6;
+  string image_url = 7;
+  string category = 8;
+  string manufacturer = 9;
+  string status = 10;
+  int64 version = 11;
+  string updated_at = 12;
+}
+
+message ProductCreatedEvent {
+  string product_id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 quantity = 5;
+  string sku = 6;
+  string image_url = 7;
+  string category = 8;
+  string manufacturer = 9;
+  string status = 10;
+  int64 version = 11;
+  string created_at = 12;
+}
+
+message ProductDeletedEvent {
+  string product_id = 1;
+  string sku = 2;
+}

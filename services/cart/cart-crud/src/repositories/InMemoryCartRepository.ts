@@ -1,5 +1,5 @@
-import { Cart } from "../models/cart";
-import { CartRepository } from "./CartRepository";
+import type { Cart } from "../models/cart";
+import type { CartRepository } from "./CartRepository";
 
 export class InMemoryCartRepository implements CartRepository {
   private carts: Map<number, Cart> = new Map();

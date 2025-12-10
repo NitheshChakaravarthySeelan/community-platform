@@ -1,6 +1,56 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response # Add Response
+from .api.endpoints import checkout
+from databases import Database
+from aiokafka import AIOKafkaProducer
+import os
+import asyncio
+from .core.kafka_consumer import KafkaConsumerManager
+from .infrastructure.repositories.saga_repository import SagaRepository
+from prometheus_client import generate_latest, CollectorRegistry, Gauge, Counter # Import prometheus_client
 
-app = FastAPI()
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:secret@postgres_dev:5432/community_platform")
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
+
+database = Database(DATABASE_URL)
+kafka_producer = AIOKafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+kafka_consumer_manager: KafkaConsumerManager = None
+
+app = FastAPI(title="Checkout Orchestrator")
+
+app.include_router(checkout.router, prefix="/api", tags=["Checkout"])
+
+# Prometheus Metrics Endpoint
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(registry).decode("utf-8"), media_type="text/plain")
+
+@app.on_event("startup")
+async def startup_db_kafka():
+    await database.connect()
+    await kafka_producer.start()
+    print("Connected to database and Kafka producer started.")
+
+    # Initialize and start Kafka Consumer Manager
+    global kafka_consumer_manager
+    saga_repository = SagaRepository(database)
+    await saga_repository.create_saga_table() # Ensure saga table is created on startup
+    kafka_consumer_manager = KafkaConsumerManager(
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        database=database,
+        saga_repository=saga_repository,
+        producer=kafka_producer
+    )
+    asyncio.create_task(kafka_consumer_manager.start_consumer())
+    print("Kafka consumer manager started.")
+
+
+@app.on_event("shutdown")
+async def shutdown_db_kafka():
+    await database.disconnect()
+    await kafka_producer.stop()
+    if kafka_consumer_manager:
+        await kafka_consumer_manager.stop_consumer()
+    print("Disconnected from database and Kafka producer/consumer stopped.")
 
 @app.get("/")
 async def read_root():
