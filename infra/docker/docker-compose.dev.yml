@@ -49,8 +49,8 @@ services:
 
   cart-crud:
     build:
-      context: ../../services/cart/cart-crud
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/cart/cart-crud/Dockerfile # Specify the Dockerfile path
     container_name: cart_crud_dev
     depends_on:
       - postgres
@@ -66,8 +66,8 @@ services:
 
   auth-service:
     build:
-      context: ../../services/users/auth-service
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/users/auth-service/Dockerfile # Specify the Dockerfile path
     container_name: auth_service_dev
     depends_on:
       - postgres
@@ -83,6 +83,77 @@ services:
       # Add JWT secrets and other auth-specific config here
       - JWT_SECRET=your-super-secret-key # CHANGE THIS IN PRODUCTION
       - JWT_EXPIRES_IN=1h
+
+  intent-parser:
+    build:
+      context: ../../services/ai/intent-parser
+      dockerfile: Dockerfile
+    container_name: intent_parser_dev
+    ports:
+      - "8086:8080" # Maps to 8086 on host to avoid conflict with payment-gateway's suggested 8086
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # User must provide this env var
+      - PORT=8080 # Internal port for the FastAPI app
+
+  plan-generator:
+    build:
+      context: ../../services/ai/plan-generator
+      dockerfile: Dockerfile
+    container_name: plan_generator_dev
+    ports:
+      - "8087:8080" # Maps to 8087 on host
+    environment:
+      - PORT=8080 # Internal port for the FastAPI app
+
+  plan-executor:
+    build:
+      context: ../../services/ai/plan-executor
+      dockerfile: Dockerfile
+    container_name: plan_executor_dev
+    ports:
+      - "8088:8080" # Maps to 8088 on host
+    environment:
+      - PORT=8080 # Internal port for the FastAPI app
+    depends_on:
+      - kafka # Plan Executor will eventually send Kafka commands
+      - checkout-orchestrator # To send commands to it
+
+  checkout-orchestrator:
+    build:
+      context: ../../services/checkout/checkout-orchestrator
+      dockerfile: Dockerfile
+    container_name: checkout_orchestrator_dev
+    depends_on:
+      - postgres
+      - kafka
+      - schema-registry
+    ports:
+      - "8000:8000" # Maps to 8000 on host
+    environment:
+      - DATABASE_URL=postgresql://admin:secret@postgres_dev:5432/community_platform
+      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - PORT=8000 # Internal port for the FastAPI app
+
+  gateway-bff:
+    build:
+      context: ../../ # Monorepo root
+      dockerfile: apps/gateway-bff/Dockerfile # Specify the Dockerfile path
+    container_name: gateway_bff_dev
+    depends_on:
+      - postgres
+      - auth-service
+      - product-read
+      - cart-crud
+      - intent-parser # Depends on intent-parser
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - NEXT_PUBLIC_AUTH_SERVICE_URL=http://auth-service:3002
+      - NEXT_PUBLIC_PRODUCT_READ_SERVICE_URL=http://product-read:8081
+      - NEXT_PUBLIC_CART_CRUD_SERVICE_URL=http://cart-crud:3000
+      - NEXT_PUBLIC_INTENT_PARSER_URL=http://intent-parser:8080 # URL for intent-parser
 
   cart-snapshot:
     build:
@@ -166,6 +237,18 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    container_name: schema_registry_dev
+    depends_on:
+      - kafka
+    ports:
+      - "8085:8085" # Schema Registry UI/API
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka_dev:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8085
 
   kafdrop:
     image: obsidiandynamics/kafdrop:latest

@@ -24,10 +24,7 @@ ruff = "^0.4.8"
 pytest = "^8.2.2"
 
 [tool.poetry]
-generate-proto = "bash -c \"make -C ../../../.. generate-proto-python\""
-lint = "ruff check ."
-format = "black ."
-test = "pytest"
+packages = [{include = "plan_executor", from = "src"}]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

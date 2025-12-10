@@ -1,9 +1,9 @@
-import { Cart, CartDetails } from "../models/cart";
-import { CartRepository } from "../repositories/CartRepository";
-import {
+import type { Cart, CartDetails } from "../models/cart";
+import type { CartRepository } from "../repositories/CartRepository";
+import type {
   ProductServiceAdapter,
   Product,
-} from "./adapters/ProductServiceAdapter";
+} from "../adapters/ProductServiceAdapter";
 
 export class CartService {
   constructor(
@@ -35,7 +35,7 @@ export class CartService {
       throw new Error("Quantity must be positive.");
     }
 
-    const product: Product = await productReadService.getProductById(productId);
+    const product = await this.productServiceAdapter.getProductById(productId);
     if (!product) {
       throw new Error("Product not found.");
     }
@@ -46,7 +46,7 @@ export class CartService {
     );
 
     if (existingItemIndex > -1) {
-      cart.items[existingItemIndex].quantity += quantity;
+      cart.items[existingItemIndex]!.quantity += quantity;
     } else {
       cart.items.push({
         id: Math.floor(Math.random() * 10000), // This should be handled by the database
@@ -74,9 +74,9 @@ export class CartService {
         );
         return {
           ...item,
-          name: product.name,
-          price: product.price,
-          image: product.imageUrl,
+          name: product?.name,
+          price: product?.price,
+          image: product?.imageUrl,
         };
       }),
     );
@@ -106,7 +106,7 @@ export class CartService {
     if (itemIndex === -1) {
       throw new Error("Item not found in cart.");
     }
-    cart.items[itemIndex].quantity = quantity;
+    cart.items[itemIndex]!.quantity = quantity;
     cart.updatedAt = new Date();
     return this.cartRepository.save(cart);
   }

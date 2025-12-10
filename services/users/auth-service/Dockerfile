@@ -1,30 +1,33 @@
-# Stage 1: Build the application
-FROM node:18-alpine AS build
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-# Copy package management files
-COPY package.json pnpm-lock.yaml ./
-
-# Install pnpm and dependencies
-RUN npm install -g pnpm
-RUN pnpm install
-
-# Copy the rest of the source code
 COPY . .
+RUN npm install -g pnpm
+ENV CI=true
+RUN pnpm install --frozen-lockfile
 
-# Build the TypeScript code
+# Stage 2: Build the application
+FROM node:20-alpine AS builder
+WORKDIR /app/services/users/auth-service
+RUN npm install -g pnpm
+COPY --from=deps /app ./
 RUN pnpm build
 
-# Stage 2: Create the final, lightweight production container
-FROM node:18-alpine
-WORKDIR /app
+# Stage 3: Create the final, lightweight production container
+FROM node:20-alpine AS runner
+WORKDIR /app/services/users/auth-service
 
-# Copy dependencies and built code from the 'build' stage
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+ENV NODE_ENV production
 
-# Expose the port the app runs on
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/services/users/auth-service/node_modules ./node_modules
+COPY --from=builder /app/services/users/auth-service/dist ./dist
+
+USER nextjs
+
 EXPOSE 3002
+ENV PORT 3002
 
-# Command to run the application
 CMD ["node", "dist/index.js"]

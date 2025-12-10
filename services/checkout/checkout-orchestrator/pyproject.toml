@@ -15,22 +15,21 @@ dependencies = [
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "opentelemetry-instrumentation-fastapi",
-    "prometheus-client"
+    "prometheus-client",
+    "aiokafka (>=0.8.1,<0.9.0)",
+    "asyncpg (>=0.29.0,<0.30.0)",
+    "databases (>=0.8.0,<0.9.0)"
 ]
 
 [tool.poetry.dev-dependencies]
 black = "^24.4.2"
 ruff = "^0.4.8"
 pytest = "^8.2.2"
+pytest-asyncio = "^0.23.7"
+respx = "^0.21.0"
 
 [tool.poetry]
 packages = [{include = "checkout_orchestrator", from = "src"}]
-
-[tool.poetry.scripts]
-generate-proto = "bash -c \"make -C ../../../.. generate-proto-python\""
-lint = "ruff check ."
-format = "black ."
-test = "pytest"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

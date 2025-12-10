@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-opentelemetry = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry = { version = "0.21" }
 opentelemetry-otlp = { version = "0.14", features = ["grpc-tonic", "trace", "metrics"] }
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
 opentelemetry-prometheus = "0.14"
 metrics-exporter-prometheus = "0.13"
 
@@ -19,3 +20,7 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 dotenvy = "0.15" # For managing .env files for configuration
 env_logger = "0.11" # For logging
 log = "0.4" # Add the log crate
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-bunyan-formatter = "0.3"
+tracing-actix-web = "0.7"

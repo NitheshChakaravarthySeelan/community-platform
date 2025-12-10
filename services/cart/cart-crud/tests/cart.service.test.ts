@@ -1,11 +1,16 @@
 import { CartService } from "../src/services/cart.service";
-import { CartRepository } from "../src/repositories/CartRepository";
-import { Cart, CartDetails, CartItem } from "../src/models/cart";
+import type { CartRepository } from "../src/repositories/CartRepository";
+import type { Cart, CartDetails, CartItem } from "../src/models/cart";
 
 // Mock Implementation of CartRepository for testing purposes
 const mockCartRepository: jest.Mocked<CartRepository> = {
   findByUserId: jest.fn(),
   save: jest.fn(),
+};
+
+// Mock Implementation of ProductServiceAdapter for testing purposes
+const mockProductServiceAdapter = {
+  getProductById: jest.fn(),
 };
 
 // Clear all mocks before each test to ensure a clean slate
@@ -16,9 +21,23 @@ beforeEach(() => {
 describe("CartService", () => {
   let cartService: CartService;
 
-  // Create a new instance of CartService with the mock repository before each test
+  // Create a new instance of CartService with the mock repository and adapter before each test
   beforeEach(() => {
-    cartService = new CartService(mockCartRepository);
+    cartService = new CartService(
+      mockCartRepository,
+      mockProductServiceAdapter as any,
+    );
+    mockProductServiceAdapter.getProductById.mockResolvedValue({
+      id: 101,
+      name: "Test Product",
+      price: 10.0,
+      imageUrl: "http://example.com/test-product.jpg",
+      description: "A test product",
+      sku: "TP101",
+      category: "Electronics",
+      manufacturer: "TestCorp",
+      status: "Available",
+    });
   });
 
   // --- Tests for getCart ---
@@ -84,7 +103,7 @@ describe("CartService", () => {
       expect(mockCartRepository.findByUserId).toHaveBeenCalledWith(userId);
       expect(mockCartRepository.save).toHaveBeenCalled();
       expect(result.items.length).toBe(1);
-      expect(result.items[0].productId).toBe(productId);
+      expect(result.items[0]!.productId).toBe(productId);
     });
 
     it("should increment the quantity of an existing item", async () => {
@@ -119,7 +138,7 @@ describe("CartService", () => {
 
       // Assert
       expect(mockCartRepository.save).toHaveBeenCalled();
-      expect(result.items[0].quantity).toBe(initialQuantity + addedQuantity);
+      expect(result.items[0]!.quantity).toBe(initialQuantity + addedQuantity);
     });
   });
 
@@ -153,7 +172,7 @@ describe("CartService", () => {
       );
 
       // Assert
-      expect(result.items[0].quantity).toBe(newQuantity);
+      expect(result.items[0]!.quantity).toBe(newQuantity);
       expect(mockCartRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           items: expect.arrayContaining([
@@ -212,7 +231,7 @@ describe("CartService", () => {
 
       // Assert
       expect(result.items.length).toBe(1);
-      expect(result.items[0].productId).not.toBe(productIdToRemove);
+      expect(result.items[0]!.productId).not.toBe(productIdToRemove);
       expect(mockCartRepository.save).toHaveBeenCalled();
     });
   });

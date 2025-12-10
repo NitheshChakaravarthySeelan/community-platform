@@ -4,6 +4,7 @@ package product;
 
 option java_package = "com.community.catalog.proto";
 option java_multiple_files = true;
+option go_package = "github.com/community-platform/product;product";
 
 message Product {
   string id = 1;

@@ -19,4 +19,7 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 dotenvy = "0.15" # For managing .env files for configuration
 env_logger = "0.11" # For logging
 log = "0.4" # Add the log crate
-config = { version = "0.14", features = ["toml", "yaml", "json", "convert"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-bunyan-formatter = "0.3"
+tracing-actix-web = "0.7"

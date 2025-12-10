@@ -12,8 +12,8 @@ export interface Product {
   manufacturer: string;
   status: string;
   version: number;
-  createdAt: datetime;
-  updatedAt: datetime;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class ProductServiceAdapter {
@@ -33,7 +33,7 @@ export class ProductServiceAdapter {
       const response = await axios.get<Product>(`${this.baseUrl}/${productId}`);
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.resonse?.status === 404) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
       console.error(`Error fetching product ${productId}:`, error);

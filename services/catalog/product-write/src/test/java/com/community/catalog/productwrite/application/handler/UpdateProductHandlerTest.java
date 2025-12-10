@@ -1,0 +1,83 @@
+package com.community.catalog.productwrite.application.handler;
+
+import com.community.catalog.productwrite.application.command.UpdateProductCommand;
+import com.community.catalog.productwrite.application.error.ForbiddenException;
+import com.community.catalog.productwrite.application.error.ProductNotFoundException;
+import com.community.catalog.productwrite.domain.model.Product;
+import com.community.catalog.productwrite.domain.repository.ProductRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class UpdateProductHandlerTest {
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @InjectMocks
+    private UpdateProductHandler handler;
+
+    @Test
+    void testHandle_WhenUserIsAdmin_ShouldUpdateAndReturnProduct() {
+        // Arrange
+        Long productId = 1L;
+        UpdateProductCommand command = new UpdateProductCommand(
+                productId, "Updated Name", "Updated Desc", new BigDecimal("129.99"),
+                150, "new.jpg", "new-cat", "new-manu", "ACTIVE",
+                "admin-user-id", List.of("ADMIN")
+        );
+
+        Product existingProduct = Product.builder().id(productId).name("Old Name").build();
+        when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Product updatedProduct = handler.handle(command);
+
+        // Assert
+        assertNotNull(updatedProduct);
+        assertEquals("Updated Name", updatedProduct.getName());
+        assertEquals(new BigDecimal("129.99"), updatedProduct.getPrice());
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository, times(1)).save(any(Product.class));
+    }
+
+    @Test
+    void testHandle_WhenProductNotFound_ShouldThrowException() {
+        // Arrange
+        Long productId = 2L;
+        UpdateProductCommand command = new UpdateProductCommand(
+                productId, "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("ADMIN")
+        );
+        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ProductNotFoundException.class, () -> handler.handle(command));
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testHandle_WhenUserLacksRole_ShouldThrowForbiddenException() {
+        // Arrange
+        Long productId = 1L;
+        UpdateProductCommand command = new UpdateProductCommand(
+                productId, "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("USER")
+        );
+
+        // Act & Assert
+        assertThrows(ForbiddenException.class, () -> handler.handle(command));
+        verify(productRepository, never()).findById(any());
+        verify(productRepository, never()).save(any());
+    }
+}

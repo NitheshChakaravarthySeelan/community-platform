@@ -8,6 +8,7 @@ generate-proto-python:
 	@echo "Generating Python Protobuf code..."
 	./scripts/generate_proto.sh python services/inventory/warehouse-sync/warehouse_sync product.proto
 	./scripts/generate_proto.sh python services/checkout/checkout-orchestrator/checkout_orchestrator product.proto
+	./scripts/generate_proto.sh python services/checkout/checkout-orchestrator/checkout_orchestrator catalog_events.proto
 	./scripts/generate_proto.sh python services/search/rec-model-service/rec_model_service product.proto
 	./scripts/generate_proto.sh python services/ai/intent-parser/intent_parser product.proto
 	./scripts/generate_proto.sh python services/ai/plan-generator/plan_generator product.proto
@@ -17,6 +18,7 @@ generate-proto-python:
 generate-proto-go:
 	@echo "Generating Go Protobuf code..."
 	./scripts/generate_proto.sh go services/notifications/email-service product.proto
+	./scripts/generate_proto.sh go services/notifications/email-service catalog_events.proto
 	./scripts/generate_proto.sh go services/notifications/sms-service product.proto
 	./scripts/generate_proto.sh go services/notifications/push-service product.proto
 	./scripts/generate_proto.sh go services/ops/metrics product.proto
@@ -27,6 +29,8 @@ generate-proto-go:
 .PHONY: generate-proto-typescript
 generate-proto-typescript:
 	@echo "Generating TypeScript Protobuf code..."
+	./scripts/generate_proto.sh typescript shared/libs/ts product.proto
+	./scripts/generate_proto.sh typescript shared/libs/ts catalog_events.proto
 	./scripts/generate_proto.sh typescript apps/gateway-bff/src/proto product.proto
 	./scripts/generate_proto.sh typescript services/cart/cart-crud/src/proto product.proto
 

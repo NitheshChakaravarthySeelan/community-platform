@@ -10,6 +10,6 @@ export interface Product {
   manufacturer: string;
   status: string;
   version: number;
-  createdAt: date;
-  updatedAt: date;
+  createdAt: Date;
+  updatedAt: Date;
 }

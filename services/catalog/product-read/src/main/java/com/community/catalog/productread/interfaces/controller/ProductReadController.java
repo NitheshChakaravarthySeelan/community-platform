@@ -1,8 +1,8 @@
 package com.community.catalog.productread.interfaces.controller;
 
 import com.community.catalog.productread.application.dto.ProductDTO;
-import com.community.catalog.productread.application.handler.GetAllProductsQuery;
-import com.community.catalog.productread.application.handler.GetProductByIdQuery;
+import com.community.catalog.productread.application.command.GetAllProductsQuery;
+import com.community.catalog.productread.application.command.GetProductByIdQuery;
 import com.community.catalog.productread.application.mediator.Mediator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -23,66 +23,67 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 // Removed @Testcontainers
-@SpringBootTest(classes = OrderCreateApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        classes = OrderCreateApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test-h2") // Activate a specific profile for H2 database
 class OrderControllerIntegrationTest {
 
-  @Autowired
-  private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private OrderRepository orderRepository;
+    @Autowired private OrderRepository orderRepository;
 
-  @BeforeEach
-  void setUp() {
-    orderRepository.deleteAll();
-  }
+    @BeforeEach
+    void setUp() {
+        orderRepository.deleteAll();
+    }
 
-  @Test
-  void shouldCreateOrderSuccessfully() throws Exception {
-    // Given
-    OrderItemCommand orderItemCommand = OrderItemCommand.builder()
-        .productId(UUID.randomUUID())
-        .quantity(1)
-        .name("Integration Test Product")
-        .priceAtTime(1500)
-        .build();
+    @Test
+    void shouldCreateOrderSuccessfully() throws Exception {
+        // Given
+        OrderItemCommand orderItemCommand =
+                OrderItemCommand.builder()
+                        .productId(UUID.randomUUID())
+                        .quantity(1)
+                        .name("Integration Test Product")
+                        .priceAtTime(1500)
+                        .build();
 
-    CreateOrderCommand createOrderCommand = CreateOrderCommand.builder()
-        .userId(UUID.randomUUID())
-        .billingAddress("456 Integration St")
-        .shippingAddress("789 Integration Ave")
-        .items(Collections.singletonList(orderItemCommand))
-        .paymentMethodDetails("Integration Card **** 2222")
-        .subtotalCents(1500)
-        .shippingCents(50)
-        .taxCents(150)
-        .discountCents(0)
-        .totalCents(1700)
-        .build();
+        CreateOrderCommand createOrderCommand =
+                CreateOrderCommand.builder()
+                        .userId(UUID.randomUUID())
+                        .billingAddress("456 Integration St")
+                        .shippingAddress("789 Integration Ave")
+                        .items(Collections.singletonList(orderItemCommand))
+                        .paymentMethodDetails("Integration Card **** 2222")
+                        .subtotalCents(1500)
+                        .shippingCents(50)
+                        .taxCents(150)
+                        .discountCents(0)
+                        .totalCents(1700)
+                        .build();
 
-    // When
-    mockMvc.perform(
-        post("/orders")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(createOrderCommand)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").exists())
-        .andExpect(jsonPath("$.userId").value(createOrderCommand.getUserId().toString()))
-        .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
+        // When
+        mockMvc.perform(
+                        post("/orders")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(createOrderCommand)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.userId").value(createOrderCommand.getUserId().toString()))
+                .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
 
-    // Then verify that the order was actually saved to the database
-    assertThat(orderRepository.count()).isEqualTo(1);
-    orderRepository
-        .findAll()
-        .forEach(
-            order -> {
-              assertThat(order.getUserId()).isEqualTo(createOrderCommand.getUserId());
-              assertThat(order.getStatus()).isEqualTo(Status.PENDING_PAYMENT);
-            });
-  }
+        // Then verify that the order was actually saved to the database
+        assertThat(orderRepository.count()).isEqualTo(1);
+        orderRepository
+                .findAll()
+                .forEach(
+                        order -> {
+                            assertThat(order.getUserId()).isEqualTo(createOrderCommand.getUserId());
+                            assertThat(order.getStatus()).isEqualTo(Status.PENDING_PAYMENT);
+                        });
+    }
 }

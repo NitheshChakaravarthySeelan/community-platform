@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "jest",
     "build": "tsc",
@@ -24,7 +25,9 @@
   "devDependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
     "@opentelemetry/sdk-node": "^0.208.0",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
+    "@types/node": "^20.19.23",
     "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.3",
     "dotenv": "^17.2.3",

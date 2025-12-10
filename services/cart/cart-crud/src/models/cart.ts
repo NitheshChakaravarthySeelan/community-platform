@@ -5,9 +5,9 @@ export interface CartItem {
 }
 
 export interface CartItemDetails extends CartItem {
-  name: string;
-  price: number;
-  image: string;
+  name: string | undefined;
+  price: number | undefined;
+  image: string | undefined;
 }
 
 export interface Cart {
