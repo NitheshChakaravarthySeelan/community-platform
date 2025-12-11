@@ -122,4 +122,14 @@ export class CartService {
     cart.updatedAt = new Date();
     return this.cartRepository.save(cart);
   }
+
+  async clearCart(cartId: string): Promise<void> {
+    const cart = await this.cartRepository.findById(cartId);
+    if (!cart) {
+      throw new Error("Cart not found.");
+    }
+    cart.items = [];
+    cart.updatedAt = new Date();
+    await this.cartRepository.save(cart);
+  }
 }

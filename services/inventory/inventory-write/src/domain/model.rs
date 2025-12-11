@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use time::OffsetDateTime;
+use time;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct InventoryItem {
@@ -11,9 +11,9 @@ pub struct InventoryItem {
     pub product_id: Uuid,
     pub quantity: i32,
     #[serde(with = "time::serde::rfc3339")]
-    pub created_at: OffsetDateTime,
+    pub created_at: time::OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
-    pub updated_at: OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 // define structs for API requests here

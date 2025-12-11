@@ -25,7 +25,10 @@ client.collectDefaultMetrics();
 // Instantiate dependencies
 const cartRepository = new PostgresCartRepository();
 const productServiceAdapter = new ProductServiceAdapter();
-const cartService = new CartService(cartRepository, productServiceAdapter);
+export const cartService = new CartService(
+  cartRepository,
+  productServiceAdapter,
+);
 
 // Use the createCartRoutes function to get the router
 app.use("/api/v1/carts", createCartRoutes(cartService));

@@ -4,8 +4,9 @@
 use sqlx::{PgPool, Error};
 use uuid::Uuid;
 use crate::domain::model::{InventoryItem, UpdateStockRequest};
-use time::OffsetDateTime;
+use time;
 
+#[derive(Clone)]
 pub struct InventoryService {
     pool: PgPool,
 }
@@ -20,7 +21,7 @@ impl InventoryService {
         // and update its quantity. If it doesn't exist, we might create it.
         // For simplicity, let's assume we always update an existing one or create if not found.
 
-        let current_time = OffsetDateTime::now_utc();
+        let current_time = time::OffsetDateTime::now_utc();
 
         let inventory = sqlx::query_as!(
             InventoryItem,

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-opentelemetry = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry = { version = "0.21" }
 opentelemetry-otlp = { version = "0.14", features = ["grpc-tonic", "trace", "metrics"] }
 opentelemetry-prometheus = "0.14"
 metrics-exporter-prometheus = "0.13"
@@ -23,3 +23,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-bunyan-formatter = "0.3"
 tracing-actix-web = "0.7"
+rdkafka = { version = "0.36", features = ["ssl", "sasl"] }
+prost = "0.12"
+tonic = "0.11"
+time = { version = "0.3", features = ["serde-well-known", "macros"] }
+config = "0.13"
+prometheus = { version = "0.13", features = ["process"] }
