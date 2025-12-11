@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package order_events;
+
+option java_package = "com.community.order.events";
+option java_outer_classname = "OrderEventsProto";
+option go_package = "github.com/community-platform/order_events;order_events";
+
+import "google/protobuf/timestamp.proto";
+
+message OrderCreatedEvent {
+  string saga_id = 1;
+  string order_id = 2;
+  string user_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message OrderCreationFailedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string reason = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}

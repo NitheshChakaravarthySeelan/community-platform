@@ -184,7 +184,8 @@ class KafkaConsumerManager:
         saga_state.state = SAGA_STATE_FAILED
         saga_state.context["current_step"] = "INVENTORY_RESERVATION_FAILED"
         saga_state.context["errors"].append({"step": "inventory", "reason": event_data.get("reason")})
-        # TODO: Publish compensating transaction if needed (e.g., release inventory if partially reserved)
+        # For inventory reservation failure, typically the inventory service handles any partial reservations or rollbacks.
+        # The orchestrator simply marks the saga as failed. No explicit compensation command from orchestrator.
         logger.info(f"Saga {saga_state.id} marked as FAILED due to inventory reservation failure.")
 
     async def handle_payment_processed(self, saga_state: SagaState, event_data: Dict[str, Any]):

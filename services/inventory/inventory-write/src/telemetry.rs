@@ -1,12 +1,11 @@
 // services/inventory/inventory-write/src/telemetry.rs
 
-use actix_web::middleware::Logger;
-use metrics_exporter_prometheus::PrometheusBuilder;
-use tracing_actix_web::TracingLogger;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{EnvFilter, Registry};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+pub use tracing_actix_web::TracingLogger; // Re-export TracingLogger for use in App::new().wrap()
 
 /// Initializes a tracing subscriber for structured logging.
 pub fn init_subscriber(service_name: String, env_filter: String) {
@@ -22,12 +21,11 @@ pub fn init_subscriber(service_name: String, env_filter: String) {
         .init();
 }
 
-/// Sets up the Prometheus metrics recorder and returns Actix-web middleware.
-pub fn setup_metrics_recorder() -> metrics_exporter_prometheus::PrometheusMetrics {
-    let builder = PrometheusBuilder::new().add_service_endpoint("/metrics");
-    let recorder = builder.build().unwrap(); // Build the Prometheus recorder
-    recorder
-}
+use prometheus::{Registry as PrometheusRegistry, TextEncoder, Encoder};
 
-// Re-export TracingLogger for use in App::new().wrap()
-pub use tracing_actix_web::TracingLogger;
+/// Sets up the Prometheus metrics recorder and returns Actix-web middleware.
+pub fn setup_metrics_recorder() -> PrometheusRegistry {
+    let registry = PrometheusRegistry::new();
+    // Register your metrics with the registry here
+    registry
+}

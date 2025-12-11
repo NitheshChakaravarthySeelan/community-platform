@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package checkout_events;
+
+option java_package = "com.community.checkout.events";
+option java_outer_classname = "CheckoutEventsProto";
+option go_package = "github.com/community-platform/checkout_events;checkout_events";
+
+import "google/protobuf/timestamp.proto";
+
+message CheckoutInitiatedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string cart_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message InventoryReservedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string cart_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message InventoryReservationFailedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string cart_id = 3;
+  string reason = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}

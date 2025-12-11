@@ -21,6 +21,12 @@ KAFKA_TOPIC_ORDER_COMMAND = "checkout.order-command"
 KAFKA_TOPIC_CART_COMMAND = "checkout.cart-command"
 KAFKA_TOPIC_CHECKOUT_EVENTS = "checkout.checkout-events" # For events like InventoryReserved, PaymentProcessed, OrderCreated etc.
 
+from pybreaker import CircuitBreaker
+from pybreaker import CircuitBreakerError
+
+# Create a circuit breaker for the Kafka producer
+kafka_breaker = CircuitBreaker(fail_max=5, reset_timeout=60)
+
 class CheckoutService:
     def __init__(
         self,
@@ -37,23 +43,19 @@ class CheckoutService:
         self.payment_service_url = "http://localhost:8086"
         self.order_service_url = "http://localhost:8087"
 
-    async def start_checkout_saga(self, cart_id: str, user_id: str) -> str:
-        saga_id = str(uuid.uuid4()) # Generate a unique saga ID
+    @kafka_breaker
+    async def publish_to_kafka(self, topic, payload):
+        await self.producer.send_and_wait(topic, payload)
 
-        # 1. Get cart details - This will eventually be an event reaction, for now, direct call
-        # In a real saga, the CheckoutInitiated event would typically carry enough info
-        # or the cart service would emit CartCheckedOutEvent
-        async with httpx.AsyncClient() as client:
-            cart_response = await client.get(f"{self.cart_service_url}/api/carts/{cart_id}")
-            cart_response.raise_for_status()
-            cart_details = cart_response.json()
+    async def start_checkout_saga(self, cart_id: str, user_id: str, cart_details: Dict[str, Any]) -> str:
+        saga_id = str(uuid.uuid4()) # Generate a unique saga ID
 
         # Initial saga context
         saga_context: Dict[str, Any] = {
             "cart_id": cart_id,
             "user_id": user_id,
             "cart_details": cart_details,
-            "current_step": "CART_FETCHED",
+            "current_step": "CHECKOUT_INITIATED",
             "errors": []
         }
 
@@ -77,11 +79,17 @@ class CheckoutService:
             "cart_details": cart_details,
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
-        await self.producer.send_and_wait(
-            KAFKA_TOPIC_CHECKOUT_INITIATED,
-            json.dumps(checkout_initiated_payload).encode('utf-8')
-        )
-        print(f"Checkout saga {saga_id} initiated and event published.")
+        try:
+            await self.publish_to_kafka(
+                KAFKA_TOPIC_CHECKOUT_INITIATED,
+                json.dumps(checkout_initiated_payload).encode('utf-8')
+            )
+            print(f"Checkout saga {saga_id} initiated and event published.")
+        except CircuitBreakerError:
+            # Handle the circuit breaker being open
+            # For example, you could log an error, or try to enqueue the request for later
+            print(f"Circuit breaker is open for Kafka producer. Could not initiate checkout saga {saga_id}.")
+            raise
 
         return saga_id
 

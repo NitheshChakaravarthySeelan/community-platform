@@ -11,7 +11,7 @@ async def checkout(
     checkout_service: CheckoutService = Depends(get_checkout_service)
 ):
     try:
-        saga_id = await checkout_service.start_checkout_saga(request.cart_id, request.user_id)
+        saga_id = await checkout_service.start_checkout_saga(request.cart_id, request.user_id, request.cart_details)
         return CheckoutResponse(
             success=True,
             order_id=saga_id, # Returning saga_id instead of order_id

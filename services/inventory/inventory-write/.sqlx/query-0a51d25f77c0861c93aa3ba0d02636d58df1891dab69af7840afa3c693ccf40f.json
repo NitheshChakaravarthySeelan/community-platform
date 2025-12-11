@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO inventory_items (product_id, quantity, created_at, updated_at)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (product_id) DO UPDATE\n            SET quantity = inventory_items.quantity + $2, updated_at = $4\n            RETURNING id, product_id, quantity, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": ["Uuid", "Int4", "Timestamptz", "Timestamptz"]
+    },
+    "nullable": [false, false, false, false, false]
+  },
+  "hash": "0a51d25f77c0861c93aa3ba0d02636d58df1891dab69af7840afa3c693ccf40f"
+}

@@ -4,6 +4,7 @@
 use actix_web::{web, HttpResponse, Responder};
 use uuid::Uuid;
 use crate::domain::service::InventoryService;
+#[allow(unused_imports)]
 use crate::domain::model::{UpdateStockRequest, InventoryItem};
 use serde_json::json;
 
