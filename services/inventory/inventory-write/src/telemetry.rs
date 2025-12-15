@@ -1,6 +1,5 @@
 // services/inventory/inventory-write/src/telemetry.rs
 
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{EnvFilter, Registry};
 use tracing_subscriber::layer::SubscriberExt;
@@ -21,7 +20,7 @@ pub fn init_subscriber(service_name: String, env_filter: String) {
         .init();
 }
 
-use prometheus::{Registry as PrometheusRegistry, TextEncoder, Encoder};
+use prometheus::{Registry as PrometheusRegistry};
 
 /// Sets up the Prometheus metrics recorder and returns Actix-web middleware.
 pub fn setup_metrics_recorder() -> PrometheusRegistry {

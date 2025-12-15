@@ -16,7 +16,7 @@ struct ReserveInventoryCommand {
 
 #[derive(Deserialize)]
 struct Item {
-    productId: String,
+    product_id: String,
     quantity: i32,
 }
 
@@ -62,7 +62,7 @@ async fn process_message(msg: &[u8], producer: &FutureProducer, pool: &PgPool) {
     let mut sufficient_inventory = true;
     for item in &command.items {
         let row: (i32,) = match sqlx::query_as("SELECT quantity FROM inventory WHERE product_id = $1")
-            .bind(item.productId.clone())
+            .bind(item.product_id.clone())
             .fetch_one(&mut *transaction)
             .await
         {
@@ -83,7 +83,7 @@ async fn process_message(msg: &[u8], producer: &FutureProducer, pool: &PgPool) {
         for item in &command.items {
             if let Err(e) = sqlx::query("UPDATE inventory SET quantity = quantity - $1 WHERE product_id = $2")
                 .bind(item.quantity)
-                .bind(item.productId.clone())
+                .bind(item.product_id.clone())
                 .execute(&mut *transaction)
                 .await
             {
