@@ -1,6 +1,6 @@
 import "dotenv/config"; // Load environment variables as early as possible
-import app, { cartService } from "./app"; // Use ES Module import and import cartService
-import { initKafka, disconnectKafka } from "./kafka"; // Import Kafka functions
+import app, { cartService } from "./app.js"; // Use ES Module import and import cartService
+import { initKafka, disconnectKafka } from "./kafka.js"; // Import Kafka functions
 
 const port = process.env.PORT || 3000;
 

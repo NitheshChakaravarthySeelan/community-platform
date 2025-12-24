@@ -59,7 +59,6 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -84,10 +83,11 @@
             <artifactId>protobuf-java</artifactId>
             <version>3.21.7</version>
         </dependency>
+        <!-- Custom Shared Kafka DTOs -->
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20231013</version>
+            <groupId>com.community.platform.shared</groupId>
+            <artifactId>kafka-dtos</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

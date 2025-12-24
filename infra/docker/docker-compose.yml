@@ -1,33 +1,5 @@
 version: '3.8'
 
-services:
-  product-service:
-    build:
-      context: ../../services/product-service
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    networks:
-      - community-platform-network
-
-  user-service:
-    build:
-      context: ../../services/user-service
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    networks:
-      - community-platform-network
-
-  inventory-service:
-    build:
-      context: ../../services/inventory-service
-      dockerfile: Dockerfile
-    ports:
-      - "8081:8080" # Rust service runs on 8080 internally, map to 8081 externally
-    networks:
-      - community-platform-network
-
 networks:
   community-platform-network:
     driver: bridge

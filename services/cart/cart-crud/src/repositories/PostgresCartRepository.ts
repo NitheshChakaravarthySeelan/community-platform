@@ -1,6 +1,6 @@
-import type { Cart } from "../models/cart";
-import type { CartRepository } from "./CartRepository";
-import { dbPool } from "../utils/db";
+import type { Cart } from "../models/cart.js";
+import type { CartRepository } from "./CartRepository.js";
+import { dbPool } from "../utils/db.js";
 
 export class PostgresCartRepository implements CartRepository {
   async findByUserId(userId: number): Promise<Cart | null> {
@@ -22,7 +22,7 @@ export class PostgresCartRepository implements CartRepository {
       const cart: Cart = {
         id: dbRow.id,
         userId: dbRow.user_id,
-        items: dbRow.items,
+        items: JSON.parse(dbRow.items),
         createdAt: dbRow.created_at,
         updatedAt: dbRow.updated_at,
       };
@@ -63,7 +63,7 @@ export class PostgresCartRepository implements CartRepository {
       const savedCart: Cart = {
         id: dbRow.id,
         userId: dbRow.user_id,
-        items: dbRow.items,
+        items: JSON.parse(dbRow.items),
         createdAt: dbRow.created_at,
         updatedAt: dbRow.updated_at,
       };

@@ -1,8 +1,8 @@
 import { Router } from "express"; // Import Router as value
 import type { Request, Response } from "express"; // Import Request and Response as types
 import { body, param } from "express-validator";
-import { validateRequest } from "../utils/validator";
-import type { CartService } from "../services/cart.service"; // Import CartService as type
+import { validateRequest } from "../utils/validator.js";
+import type { CartService } from "../services/cart.service.js"; // Import CartService as type
 
 // Export a function that creates the router, allowing for dependency injection
 export const createCartRoutes = (cartService: CartService): Router => {

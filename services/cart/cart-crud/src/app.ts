@@ -1,9 +1,9 @@
 import express, { type Request, type Response } from "express"; // Use type imports
-import { createCartRoutes } from "./routes/cart.routes";
+import { createCartRoutes } from "./routes/cart.routes.js";
 import * as client from "prom-client";
-import { CartService } from "./services/cart.service";
-import { PostgresCartRepository } from "./repositories/PostgresCartRepository";
-import { ProductServiceAdapter } from "./adapters/ProductServiceAdapter";
+import { CartService } from "./services/cart.service.js";
+import { PostgresCartRepository } from "./repositories/PostgresCartRepository.js";
+import { ProductServiceAdapter } from "./adapters/ProductServiceAdapter.js";
 
 const app: express.Application = express(); // Explicitly type app
 
