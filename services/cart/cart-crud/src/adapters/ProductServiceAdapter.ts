@@ -20,7 +20,7 @@ export class ProductServiceAdapter {
   private readonly baseUrl: string;
 
   constructor() {
-    this.baseUrl = "http://product_read_dev:8081/api/v1/products";
+    this.baseUrl = process.env.PRODUCT_SERVICE_BASE_URL || "http://product_read_dev:8081/api/v1/products";
   }
 
   /**

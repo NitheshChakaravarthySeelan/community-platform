@@ -4,6 +4,7 @@ import com.community.orders.paymentgateway.domain.model.PaymentTransaction;
 import com.community.orders.paymentgateway.domain.repository.PaymentTransactionRepository;
 import com.community.orders.paymentgateway.interfaces.dto.PaymentRequest;
 import com.community.orders.paymentgateway.interfaces.dto.PaymentResponse;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +20,15 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse processPayment(PaymentRequest request) {
-        // Simulate payment processing
-        boolean paymentSuccessful = random.nextBoolean(); // Simulate success/failure randomly
+        // Simulate payment processing with deterministic logic
+        // For testing purposes: an amount of 13.00 will simulate a failure.
+        boolean paymentSuccessful = !request.getAmount().equals(new BigDecimal("13.00"));
 
         String status = paymentSuccessful ? "SUCCESS" : "FAILED";
         String message =
                 paymentSuccessful
                         ? "Payment processed successfully."
-                        : "Payment failed due to an unknown error.";
+                        : "Payment failed due to simulated error: insufficient funds.";
 
         PaymentTransaction transaction =
                 PaymentTransaction.builder()

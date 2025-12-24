@@ -1,9 +1,9 @@
-import type { Cart, CartDetails } from "../models/cart";
-import type { CartRepository } from "../repositories/CartRepository";
+import type { Cart, CartDetails, CartItem } from "../models/cart.js";
+import type { CartRepository } from "../repositories/CartRepository.js";
 import type {
   ProductServiceAdapter,
   Product,
-} from "../adapters/ProductServiceAdapter";
+} from "../adapters/ProductServiceAdapter.js";
 
 export class CartService {
   constructor(
@@ -49,7 +49,6 @@ export class CartService {
       cart.items[existingItemIndex]!.quantity += quantity;
     } else {
       cart.items.push({
-        id: Math.floor(Math.random() * 10000), // This should be handled by the database
         productId,
         quantity,
       });
@@ -84,7 +83,7 @@ export class CartService {
     const cartDetails: CartDetails = {
       ...cart,
       items: enrichedItems,
-      totalPrice: 100, // totalPrice,
+      totalPrice: 100, // TODO: This is a mock value. Integrate with cart-pricing service.
     };
 
     return cartDetails;
@@ -123,10 +122,15 @@ export class CartService {
     return this.cartRepository.save(cart);
   }
 
-  async clearCart(cartId: string): Promise<void> {
-    const cart = await this.cartRepository.findById(cartId);
+  async clearCartByUserId(userId: string): Promise<void> {
+    // Assuming cartRepository.findByUserId expects a number, convert the string userId
+    const cart = await this.cartRepository.findByUserId(Number(userId));
     if (!cart) {
-      throw new Error("Cart not found.");
+      // It's possible a user might not have an active cart, or it was already cleared/deleted.
+      // Depending on business rules, this might be an error or simply a no-op.
+      // For now, let's just log and consider it done if no cart is found.
+      console.warn(`No active cart found for user ID: ${userId} to clear.`);
+      return;
     }
     cart.items = [];
     cart.updatedAt = new Date();

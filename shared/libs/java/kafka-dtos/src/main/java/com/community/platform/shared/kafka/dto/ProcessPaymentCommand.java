@@ -1,7 +1,7 @@
-package com.community.orders.paymentgateway.application.dto;
+package com.community.platform.shared.kafka.dto;
 
 import java.math.BigDecimal;
-
+import java.util.UUID;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ProcessPaymentCommand {
-  private String orderId;
+  private UUID orderId;
   private String userId;
   private BigDecimal amount;
 }

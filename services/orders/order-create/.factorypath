@@ -147,5 +147,4 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/io/micrometer/micrometer-observation/1.12.0/micrometer-observation-1.12.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/google/protobuf/protobuf-java/3.21.7/protobuf-java-3.21.7.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/json/json/20231013/json-20231013.jar" enabled="true" runInBatchMode="false"/>
 </factorypath>

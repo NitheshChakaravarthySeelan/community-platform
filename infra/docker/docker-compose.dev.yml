@@ -63,6 +63,8 @@ services:
       - DB_PASSWORD=secret
       - DB_DATABASE=community_platform
       - DB_PORT=5432
+      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - ENABLE_KAFKA=true
 
   auth-service:
     build:
@@ -204,6 +206,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./../../services/inventory/inventory-write/init.sql:/docker-entrypoint-initdb.d/init_inventory_items.sql
 
   redis:
     image: redis:7
