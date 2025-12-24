@@ -26,6 +26,9 @@ COPY services/cart/cart-crud ./services/cart/cart-crud
 # This will be copied from the build context (monorepo root)
 COPY . .
 
+RUN npm install -g pnpm
+ENV PATH="/usr/local/bin:$PATH"
+
 WORKDIR /app/services/cart/cart-crud
 RUN pnpm build
 
@@ -42,15 +45,8 @@ COPY pnpm-lock.yaml ./pnpm-lock.yaml
 # Install pnpm globally within this stage
 RUN npm install -g pnpm
 
-# Debugging: Inspect pnpm-lock.yaml and package.json before install
-RUN cat pnpm-lock.yaml
-RUN cat package.json
-RUN cat services/cart/cart-crud/package.json || echo "services/cart/cart-crud/package.json not found"
-
 # Install only production dependencies for cart-crud in its own directory
-RUN pnpm install --prod --frozen-lockfile
-
-# Debugging: Check if dotenv is in node_modules (removed previous debugging line)
+RUN pnpm install --prod
 
 # Copy build output for cart-crud
 COPY --from=builder /app/services/cart/cart-crud/dist ./dist
