@@ -7,30 +7,31 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
+	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
-	servicePort  = os.Getenv("PORT")
-	otelExporter = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName    = os.Getenv("SERVICE_NAME")
+	servicePort    = os.Getenv("PORT")
+	otelExporter   = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	kafkaBrokerURL = os.Getenv("KAFKA_BROKER_URL")
+	kafkaTopic     = os.Getenv("KAFKA_TOPIC")
 )
 
 // initTracerProvider initializes an OTLP trace exporter and sets up the SDK's TracerProvider.
@@ -83,20 +84,48 @@ func initMeterProvider(ctx context.Context) (*sdkmetric.MeterProvider, error) {
 		log.Println("OTEL_EXPORTER_OTLP_ENDPOINT is not set, using no-op MeterProvider.")
 		return sdkmetric.NewMeterProvider(), nil
 	}
-
-	// You would typically use a push exporter for metrics, e.g., OTLP.
-	// For this example, we'll just use a simple MeterProvider setup.
 	meterProvider := sdkmetric.NewMeterProvider()
 	otel.SetMeterProvider(meterProvider)
-
 	log.Printf("OpenTelemetry MeterProvider initialized.")
 	return meterProvider, nil
 }
 
+// startKafkaConsumer connects to Kafka and starts consuming messages from the notifications topic.
+func startKafkaConsumer() {
+	if kafkaBrokerURL == "" || kafkaTopic == "" {
+		log.Println("KAFKA_BROKER_URL or KAFKA_TOPIC not set. Kafka consumer will not start.")
+		return
+	}
+
+	log.Printf("Starting Kafka consumer for topic '%s' on broker '%s'", kafkaTopic, kafkaBrokerURL)
+
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:        []string{kafkaBrokerURL},
+		Topic:          kafkaTopic,
+		GroupID:        serviceName, // Use the service name as the consumer group ID
+		MinBytes:       10e3,        // 10KB
+		MaxBytes:       10e6,        // 10MB
+		CommitInterval: time.Second, // Flush commits to Kafka every second
+	})
+
+	ctx := context.Background()
+	for {
+		m, err := r.ReadMessage(ctx)
+		if err != nil {
+			log.Printf("Error reading from Kafka: %v", err)
+			time.Sleep(5 * time.Second) // Wait before retrying
+			continue
+		}
+		// As per the LLD, just log the received notification request
+		log.Printf("[%s] KAFKA: Received notification request on partition %d at offset %d: %s", serviceName, m.Partition, m.Offset, string(m.Value))
+	}
+}
+
 type SendPushRequest struct {
-	DeviceID string `json:"deviceId"`
-	Title    string `json:"title"`
-	Body     string `json:"body"`
+	UserID  string            `json:"userId"`
+	Title   string            `json:"title"`
+	Body    string            `json:"body"`
+	Payload map[string]string `json:"payload"`
 }
 
 type SendPushResponse struct {
@@ -106,20 +135,25 @@ type SendPushResponse struct {
 }
 
 func main() {
+	// Set defaults for environment variables
 	if serviceName == "" {
-		serviceName = "push-service" // Changed service name
+		serviceName = "push-service"
 	}
 	if servicePort == "" {
 		servicePort = "8080"
 	}
 	if otelExporter == "" {
-		otelExporter = "localhost:4317" // Default OTLP gRPC collector endpoint
+		otelExporter = "localhost:4317"
+	}
+	if kafkaBrokerURL == "" {
+		kafkaBrokerURL = "localhost:9092"
+	}
+	if kafkaTopic == "" {
+		kafkaTopic = "notifications"
 	}
 
-	// Main context for graceful shutdown
 	ctx := context.Background()
 
-	// Initialize OpenTelemetry TracerProvider
 	tracerProvider, err := initTracerProvider(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize TracerProvider: %v", err)
@@ -130,7 +164,6 @@ func main() {
 		}
 	}()
 
-	// Initialize OpenTelemetry MeterProvider
 	meterProvider, err := initMeterProvider(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize MeterProvider: %v", err)
@@ -141,31 +174,23 @@ func main() {
 		}
 	}()
 
-	// Get a Tracer and Meter instance
-	tracer := otel.Tracer("push-service-tracer") // Changed tracer name
-	meter := otel.Meter("push-service-meter")   // Changed meter name
-	requestCounter, err := meter.Int64Counter("push_requests_total", metric.WithDescription("Total number of push notification requests")) // Changed metric name
+	// Start the Kafka consumer in a separate goroutine
+	go startKafkaConsumer()
+
+	tracer := otel.Tracer(serviceName + "-tracer")
+	meter := otel.Meter(serviceName + "_meter")
+	requestCounter, err := meter.Int64Counter(serviceName + "_requests_total", metric.WithDescription("Total number of notification requests"))
 	if err != nil {
 		log.Fatalf("failed to create request counter: %v", err)
 	}
 
-	// Wrap HTTP handlers with OpenTelemetry middleware
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, span := tracer.Start(r.Context(), "handleHelloRequest")
+	// --- Setup HTTP Handlers ---
+	sendPushHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracer.Start(r.Context(), "handleSendRequest")
 		defer span.End()
 
-		span.SetAttributes(attribute.String("endpoint", "/"))
-		requestCounter.Add(r.Context(), 1, metric.WithAttributes(attribute.String("endpoint", "/")))
-
-		fmt.Fprintf(w, "Hello from Push Service!")
-	})
-
-	http.HandleFunc("/send-push", func(w http.ResponseWriter, r *http.Request) { // Changed endpoint to /send-push
-		ctx, span := tracer.Start(r.Context(), "handleSendPushRequest") // Changed span name
-		defer span.End()
-
-		span.SetAttributes(attribute.String("endpoint", "/send-push"))
-		requestCounter.Add(ctx, 1, metric.WithAttributes(attribute.String("endpoint", "/send-push")))
+		span.SetAttributes(attribute.String("endpoint", "/send"))
+		requestCounter.Add(ctx, 1, metric.WithAttributes(attribute.String("endpoint", "/send")))
 
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -179,33 +204,27 @@ func main() {
 			return
 		}
 
-		// --- Placeholder for actual push notification sending logic ---
-		// In a real application, you would integrate with an actual push notification provider
-		// (e.g., FCM, APNS) here.
-		// For now, we just simulate success.
-		log.Printf("Simulating sending push notification to DeviceID %s with title '%s'", req.DeviceID, req.Title)
-		pushID := uuid.New().String() // Generate a dummy push ID
-		// --- End Placeholder ---
+		log.Printf("[%s] HTTP: Received request to send push to user %s", serviceName, req.UserID)
+		pushID := uuid.New().String()
 
 		resp := SendPushResponse{
 			Success: true,
-			Message: fmt.Sprintf("Push notification to DeviceID %s sent successfully (simulated)", req.DeviceID),
+			Message: fmt.Sprintf("Push notification to user %s accepted for sending (simulated)", req.UserID),
 			PushID:  pushID,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	})
+	http.Handle("/send", sendPushHandler)
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, span := tracer.Start(r.Context(), "handleHealthCheck")
 		defer span.End()
-
 		span.SetAttributes(attribute.String("endpoint", "/health"))
 		fmt.Fprintf(w, "OK")
-	})
+	}))
 
-	// Prometheus metrics endpoint
 	http.Handle("/metrics", promhttp.Handler())
 
 	fmt.Printf("Server starting on port %s...\n", servicePort)

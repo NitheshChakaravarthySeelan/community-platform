@@ -1,59 +1,37 @@
 package main
 
 import (
-
 	"context"
-
+	"encoding/json"
 	"fmt"
-
 	"log"
-
 	"net/http"
-
 	"os"
+	"time"
 
-	"encoding/json" // Ensure json is explicitly imported
-
-	"github.com/google/uuid" // Add uuid for generating unique IDs
-
-	"github.com/prometheus/client_golang/prometheus/promhttp" // Add promhttp for metrics endpoint
-
-
-
+	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
-
 	"go.opentelemetry.io/otel/attribute"
-
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-
-	"go.opentelemetry.io/otel/propagation"
-
-	"go.opentelemetry.io/otel/sdk/resource"
-
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
-	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-
-
-
-	"google.golang.org/grpc"
-
-	"google.golang.org/grpc/credentials/insecure"
-
-
-
 	"go.opentelemetry.io/otel/metric"
-
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
-	servicePort  = os.Getenv("PORT")
-	otelExporter = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName    = os.Getenv("SERVICE_NAME")
+	servicePort    = os.Getenv("PORT")
+	otelExporter   = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	kafkaBrokerURL = os.Getenv("KAFKA_BROKER_URL")
+	kafkaTopic     = os.Getenv("KAFKA_TOPIC")
 )
 
 // initTracerProvider initializes an OTLP trace exporter and sets up the SDK's TracerProvider.
@@ -106,14 +84,41 @@ func initMeterProvider(ctx context.Context) (*sdkmetric.MeterProvider, error) {
 		log.Println("OTEL_EXPORTER_OTLP_ENDPOINT is not set, using no-op MeterProvider.")
 		return sdkmetric.NewMeterProvider(), nil
 	}
-
-	// You would typically use a push exporter for metrics, e.g., OTLP.
-	// For this example, we'll just use a simple MeterProvider setup.
 	meterProvider := sdkmetric.NewMeterProvider()
 	otel.SetMeterProvider(meterProvider)
-
 	log.Printf("OpenTelemetry MeterProvider initialized.")
 	return meterProvider, nil
+}
+
+// startKafkaConsumer connects to Kafka and starts consuming messages from the notifications topic.
+func startKafkaConsumer() {
+	if kafkaBrokerURL == "" || kafkaTopic == "" {
+		log.Println("KAFKA_BROKER_URL or KAFKA_TOPIC not set. Kafka consumer will not start.")
+		return
+	}
+
+	log.Printf("Starting Kafka consumer for topic '%s' on broker '%s'", kafkaTopic, kafkaBrokerURL)
+
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:        []string{kafkaBrokerURL},
+		Topic:          kafkaTopic,
+		GroupID:        serviceName, // Use the service name as the consumer group ID
+		MinBytes:       10e3,        // 10KB
+		MaxBytes:       10e6,        // 10MB
+		CommitInterval: time.Second, // Flush commits to Kafka every second
+	})
+
+	ctx := context.Background()
+	for {
+		m, err := r.ReadMessage(ctx)
+		if err != nil {
+			log.Printf("Error reading from Kafka: %v", err)
+			time.Sleep(5 * time.Second) // Wait before retrying
+			continue
+		}
+		// As per the LLD, just log the received notification request
+		log.Printf("[%s] KAFKA: Received notification request on partition %d at offset %d: %s", serviceName, m.Partition, m.Offset, string(m.Value))
+	}
 }
 
 type SendEmailRequest struct {
@@ -129,6 +134,7 @@ type SendEmailResponse struct {
 }
 
 func main() {
+	// Set defaults for environment variables
 	if serviceName == "" {
 		serviceName = "email-service"
 	}
@@ -136,13 +142,17 @@ func main() {
 		servicePort = "8080"
 	}
 	if otelExporter == "" {
-		otelExporter = "localhost:4317" // Default OTLP gRPC collector endpoint
+		otelExporter = "localhost:4317"
+	}
+	if kafkaBrokerURL == "" {
+		kafkaBrokerURL = "localhost:9092"
+	}
+	if kafkaTopic == "" {
+		kafkaTopic = "notifications"
 	}
 
-	// Main context for graceful shutdown
-	ctx := context.Background() 
-	
-	// Initialize OpenTelemetry TracerProvider
+	ctx := context.Background()
+
 	tracerProvider, err := initTracerProvider(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize TracerProvider: %v", err)
@@ -153,7 +163,6 @@ func main() {
 		}
 	}()
 
-	// Initialize OpenTelemetry MeterProvider
 	meterProvider, err := initMeterProvider(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize MeterProvider: %v", err)
@@ -164,32 +173,23 @@ func main() {
 		}
 	}()
 
-	// Get a Tracer and Meter instance
-	tracer := otel.Tracer("email-service-tracer")
-	meter := otel.Meter("email-service-meter")
-	requestCounter, err := meter.Int64Counter("email_requests_total", metric.WithDescription("Total number of email requests"))
+	// Start the Kafka consumer in a separate goroutine
+	go startKafkaConsumer()
+
+	tracer := otel.Tracer(serviceName + "-tracer")
+	meter := otel.Meter(serviceName + "_meter")
+	requestCounter, err := meter.Int64Counter(serviceName + "_requests_total", metric.WithDescription("Total number of notification requests"))
 	if err != nil {
 		log.Fatalf("failed to create request counter: %v", err)
 	}
 
-	// Wrap HTTP handlers with OpenTelemetry middleware
-	helloHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, span := tracer.Start(r.Context(), "handleHelloRequest")
-		defer span.End()
-
-		span.SetAttributes(attribute.String("endpoint", "/"))
-		requestCounter.Add(r.Context(), 1, metric.WithAttributes(attribute.String("endpoint", "/")))
-
-		fmt.Fprintf(w, "Hello from Email Service!")
-	})
-	http.Handle("/", helloHandler) // Use standard http.Handle
-
+	// --- Setup HTTP Handlers ---
 	sendEmailHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "handleSendEmailRequest")
+		ctx, span := tracer.Start(r.Context(), "handleSendRequest")
 		defer span.End()
 
-		span.SetAttributes(attribute.String("endpoint", "/send-email"))
-		requestCounter.Add(ctx, 1, metric.WithAttributes(attribute.String("endpoint", "/send-email")))
+		span.SetAttributes(attribute.String("endpoint", "/send"))
+		requestCounter.Add(ctx, 1, metric.WithAttributes(attribute.String("endpoint", "/send")))
 
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -203,35 +203,27 @@ func main() {
 			return
 		}
 
-		// --- Placeholder for actual email sending logic ---
-		// In a real application, you would integrate with an actual email provider
-		// (e.g., SendGrid, Mailgun, AWS SES) here.
-		// For now, we just simulate success.
-		log.Printf("Simulating sending email to %s with subject '%s'", req.To, req.Subject)
-		emailID := uuid.New().String() // Generate a dummy email ID
-		// --- End Placeholder ---
+		log.Printf("[%s] HTTP: Received request to send email to %s", serviceName, req.To)
+		emailID := uuid.New().String()
 
 		resp := SendEmailResponse{
 			Success: true,
-			Message: fmt.Sprintf("Email to %s sent successfully (simulated)", req.To),
+			Message: fmt.Sprintf("Email to %s accepted for sending (simulated)", req.To),
 			EmailID: emailID,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	})
-	http.Handle("/send-email", sendEmailHandler) // Use standard http.Handle
+	http.Handle("/send", sendEmailHandler)
 
-	healthHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, span := tracer.Start(r.Context(), "handleHealthCheck")
 		defer span.End()
-
 		span.SetAttributes(attribute.String("endpoint", "/health"))
 		fmt.Fprintf(w, "OK")
-	})
-	http.Handle("/health", healthHandler) // Use standard http.Handle
+	}))
 
-	// Prometheus metrics endpoint
 	http.Handle("/metrics", promhttp.Handler())
 
 	fmt.Printf("Server starting on port %s...\n", servicePort)

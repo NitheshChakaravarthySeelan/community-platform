@@ -1,37 +1,28 @@
 package com.community.pricing.taxcalculation.interfaces.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
+import lombok.Data;
 
+// A simple representation of cart and address details for the request
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class TaxRequest {
-    private List<TaxItemDTO> items;
-    private TaxAddressDTO destinationAddress;
-}
+    private String cartId;
+    private AddressDTO shippingAddress;
+    private List<CartItemDTO> items;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class TaxItemDTO {
-    private UUID productId;
-    private int quantity;
-    private BigDecimal unitPrice;
-}
+    @Data
+    public static class AddressDTO {
+        private String street;
+        private String city;
+        private String state;
+        private String postalCode;
+        private String country;
+    }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class TaxAddressDTO {
-    private String street;
-    private String city;
-    private String state;
-    private String zipCode;
-    private String country;
+    @Data
+    public static class CartItemDTO {
+        private String productId;
+        private int quantity;
+        private long priceCents;
+    }
 }
