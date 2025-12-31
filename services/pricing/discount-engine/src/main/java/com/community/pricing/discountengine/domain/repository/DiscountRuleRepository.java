@@ -1,13 +1,17 @@
 package com.community.pricing.discountengine.domain.repository;
 
 import com.community.pricing.discountengine.domain.model.DiscountRule;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-import java.util.UUID;
-
 @Repository
-public interface DiscountRuleRepository extends JpaRepository<DiscountRule, UUID> {
-    Optional<DiscountRule> findByCode(String code);
+public interface DiscountRuleRepository extends JpaRepository<DiscountRule, Long> {
+
+    List<DiscountRule> findByProductIdAndActiveTrueAndStartDateBeforeAndEndDateAfter(
+            String productId, Instant now, Instant alsoNow);
+
+    List<DiscountRule> findByCouponCodeAndActiveTrueAndStartDateBeforeAndEndDateAfter(
+            String couponCode, Instant now, Instant alsoNow);
 }

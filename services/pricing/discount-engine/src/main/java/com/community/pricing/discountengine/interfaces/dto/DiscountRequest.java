@@ -1,27 +1,19 @@
 package com.community.pricing.discountengine.interfaces.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
+import lombok.Data;
 
+// A simple representation of cart details for the request
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class DiscountRequest {
-    private List<ProductPriceDTO> products;
-    private String couponCode;
-    private UUID userId; // Optional, for user-specific discounts
-}
+    private String cartId;
+    private String userId;
+    private List<CartItemDTO> items;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class ProductPriceDTO {
-    private UUID productId;
-    private BigDecimal price;
-    private int quantity;
+    @Data
+    public static class CartItemDTO {
+        private String productId;
+        private int quantity;
+        private long priceCents;
+    }
 }
