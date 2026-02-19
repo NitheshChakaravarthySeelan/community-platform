@@ -66,4 +66,4 @@
 - [x] Task: Update project documentation regarding Docker setup and usage.
   - [x] Add instructions for building and running the Docker Compose setup.
   - [x] Document any specific considerations for individual services or development workflows.
-- [ ] Task: Conductor - User Manual Verification 'Overall Verification and Cleanup' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Overall Verification and Cleanup' (Protocol in workflow.md)

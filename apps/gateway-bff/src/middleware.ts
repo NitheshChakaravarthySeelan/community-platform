@@ -1,15 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { AuthGrpcClient } from "./lib/grpc/auth.client"; // Import AuthGrpcClient
 
 export const config = {
   matcher: ["/api/products/:path*", "/api/orders/:path*"],
-  runtime: "nodejs", // Force Node.js runtime
 };
-
-// Instantiate AuthGrpcClient
-const authGrpcClient = new AuthGrpcClient(
-  process.env.AUTH_SERVICE_GRPC_URL || "localhost:50051",
-);
 
 export async function middleware(request: NextRequest) {
   const jwtToken = request.cookies.get("jwtToken")?.value;
@@ -19,7 +12,21 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const validationResult = await authGrpcClient.validateToken(jwtToken);
+    // Make an internal fetch call to the new API route for token validation
+    const apiResponse = await fetch("http://localhost:3000/api/auth-validate", {
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+      },
+    });
+
+    if (!apiResponse.ok) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: apiResponse.status },
+      );
+    }
+
+    const validationResult = await apiResponse.json();
 
     if (!validationResult.isValid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,7 +42,7 @@ export async function middleware(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Authentication gRPC error:", error);
+    console.error("Token validation API error:", error);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

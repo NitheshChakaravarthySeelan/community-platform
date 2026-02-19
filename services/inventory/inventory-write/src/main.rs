@@ -1,20 +1,17 @@
 // services/inventory/inventory-write/src/main.rs
 // Main binary entrypoint.
 
-use actix_web::{web, App, HttpServer, HttpResponse};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use dotenvy::dotenv;
+use prometheus::{self, Encoder};
 use sqlx::PgPool;
 use std::env;
-use prometheus::{self, Encoder};
 
 use inventory_write::api::{health, inventory};
 use inventory_write::domain::service::InventoryService;
 use inventory_write::telemetry::{init_subscriber, setup_metrics_recorder, TracingLogger};
 
-
 use inventory_write::kafka_consumer;
-
-
 
 async fn metrics_endpoint(prometheus_registry: web::Data<prometheus::Registry>) -> HttpResponse {
     let mut buffer = vec![];
@@ -38,20 +35,20 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to connect to Postgres.");
 
     // Run database migrations
-    sqlx::migrate!().run(&pool).await
+    sqlx::migrate!()
+        .run(&pool)
+        .await
         .expect("Failed to run database migrations");
-
-
 
     let inventory_service = InventoryService::new(pool.clone());
 
     // --- Kafka Consumer Setup ---
-    let product_events_topic = env::var("PRODUCT_EVENTS_TOPIC")
-        .unwrap_or_else(|_| "product-events".to_string());
+    let product_events_topic =
+        env::var("PRODUCT_EVENTS_TOPIC").unwrap_or_else(|_| "product-events".to_string());
     let checkout_events_topic = env::var("CHECKOUT_EVENTS_TOPIC")
         .unwrap_or_else(|_| "checkout.checkout-events".to_string());
-    let kafka_group_id = env::var("KAFKA_GROUP_ID")
-        .unwrap_or_else(|_| "inventory-write-group".to_string());
+    let kafka_group_id =
+        env::var("KAFKA_GROUP_ID").unwrap_or_else(|_| "inventory-write-group".to_string());
 
     let pool_clone = pool.clone();
     tokio::spawn(async move {
@@ -59,8 +56,9 @@ async fn main() -> std::io::Result<()> {
             pool_clone,
             &product_events_topic,
             &checkout_events_topic,
-            &kafka_group_id
-        ).await;
+            &kafka_group_id,
+        )
+        .await;
     });
 
     HttpServer::new(move || {
@@ -70,7 +68,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(inventory_service.clone())) // Pass InventoryService
             .app_data(web::Data::new(prometheus_registry.clone()))
             .service(health::health_check) // Register health check route
-            .route("/inventory/{product_id}/update", web::post().to(inventory::update_inventory)) // Register inventory update route
+            .route(
+                "/inventory/{product_id}/update",
+                web::post().to(inventory::update_inventory),
+            ) // Register inventory update route
             .route("/metrics", web::get().to(metrics_endpoint)) // Add metrics endpoint
     })
     .bind(("0.0.0.0", 8080))? // Use port 8080 by default

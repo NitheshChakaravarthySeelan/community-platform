@@ -55,7 +55,7 @@ COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/standalone/. 
 COPY --from=builder --chown=node:node /repo/apps/gateway-bff/public/. /app/public
 COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/static/. /app/.next/static
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3004/api/health || exit 1 # Assuming a health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3000/ || exit 1 # Health check to root path (internal port)
 
 EXPOSE 3004
 

@@ -5,7 +5,7 @@ import * as grpc from "@grpc/grpc-js"; // Import grpc
 
 // Instantiate ProductReadGrpcClient
 const productReadGrpcClient = new ProductReadGrpcClient(
-  process.env.PRODUCT_READ_GRPC_URL || "localhost:50052",
+  process.env.PRODUCT_READ_GRPC_URL || "product-read:9091",
 );
 
 export async function GET(request: NextRequest) {

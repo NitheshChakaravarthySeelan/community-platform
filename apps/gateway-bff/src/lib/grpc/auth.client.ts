@@ -2,8 +2,11 @@ import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { AuthServiceClient, AuthServiceService } from "@proto/auth_service"; // Use generated client and service
 import { makeGenericClientConstructor } from "@grpc/grpc-js"; // Import makeGenericClientConstructor
+import path from "path";
 
-const PROTO_PATH = "../../shared/proto/auth_service.proto";
+const PROTO_PATH = path.join(process.cwd(), "proto", "auth_service.proto");
+
+// const PROTO_PATH = "../../shared/proto/auth_service.proto";
 
 export class AuthGrpcClient {
   private client: AuthServiceClient;
@@ -27,9 +30,7 @@ export class AuthGrpcClient {
     ) as unknown as AuthServiceClient;
   }
 
-  async validateToken(
-    token: string,
-  ): Promise<{
+  async validateToken(token: string): Promise<{
     isValid: boolean;
     userId: string;
     userName: string;

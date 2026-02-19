@@ -20,8 +20,10 @@ struct CheckoutInitiatedEvent {
     r#type: String, // Event type string, e.g., "CheckoutInitiatedEvent"
 }
 
+use sqlx::FromRow; // Add this line
+
 // Renamed for clarity and consistency with shared DTO
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, FromRow)]
 struct InventoryItem {
     product_id: Uuid,
     quantity: i32,
@@ -67,14 +69,15 @@ async fn process_message<DB>(
     for<'a> time::OffsetDateTime: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
 
     // Corrected IntoArguments bound for all types passed to .bind()
-    for<'a> <DB as sqlx::Database>::Arguments<'a>: sqlx::IntoArguments<'a, DB>,
+    for<'a> <DB as sqlx::database::HasArguments<'a>>::Arguments: sqlx::IntoArguments<'a, DB>,
+
 
     // Bounds for types returned by queries (FromRow for tuples and structs)
     (i32,): for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
     InventoryItem: for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
 
     // Ensure the database's Row type correctly implements necessary traits
-    <DB as sqlx::Database>::Row: sqlx::Row + sqlx::ColumnIndex<usize> + Unpin,
+    <DB as sqlx::Database>::Row: sqlx::Row + Unpin,
 {
     let raw_event: serde_json::Value = match serde_json::from_slice(msg_payload) {
         Ok(val) => val,
@@ -258,7 +261,7 @@ pub async fn run_kafka_consumer(
     product_events_topic: &str,
     checkout_events_topic: &str,
     kafka_group_id: &str
-) {
+) -> Result<(), Box<dyn std::error::Error>> {
     // Load .env file
     dotenvy::dotenv().ok();
     let kafka_bootstrap_servers = env::var("KAFKA_BOOTSTRAP_SERVERS")
@@ -268,17 +271,14 @@ pub async fn run_kafka_consumer(
         .set("bootstrap.servers", kafka_bootstrap_servers.clone())
         .set("group.id", kafka_group_id.to_string())
         .set("auto.offset.reset", "earliest")
-        .create()
-        .expect("Consumer creation failed");
+        .create()?;
 
     consumer
-        .subscribe(&[product_events_topic, checkout_events_topic]) // Subscribe to both topics
-        .expect("Can't subscribe to specified topics");
+        .subscribe(&[product_events_topic, checkout_events_topic])?;
 
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", kafka_bootstrap_servers)
-        .create()
-        .expect("Producer creation failed");
+        .create()?;
 
     loop {
         match consumer.recv().await {

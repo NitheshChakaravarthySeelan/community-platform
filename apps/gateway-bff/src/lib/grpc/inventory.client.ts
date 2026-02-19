@@ -6,8 +6,11 @@ import {
 } from "@proto/inventory";
 import { CheckStockRequest, CheckStockResponse } from "@proto/inventory";
 import { makeGenericClientConstructor } from "@grpc/grpc-js"; // Import makeGenericClientConstructor
+import path from "path";
 
-const PROTO_PATH = "../../shared/proto/inventory.proto";
+const PROTO_PATH = path.join(process.cwd(), "proto", "inventory.proto");
+
+// const PROTO_PATH = "../../shared/proto/inventory.proto";
 
 export class InventoryGrpcClient {
   private client: InventoryServiceClient;

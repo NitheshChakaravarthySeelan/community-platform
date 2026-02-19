@@ -9,8 +9,11 @@ import {
   GetCartRequest,
 } from "@proto/cart";
 import { makeGenericClientConstructor } from "@grpc/grpc-js"; // Import makeGenericClientConstructor
+import path from "path";
 
-const PROTO_PATH = "../../shared/proto/cart.proto";
+const PROTO_PATH = path.join(process.cwd(), "proto", "cart.proto");
+
+// const PROTO_PATH = "../../shared/proto/cart.proto";
 
 export class CartGrpcClient {
   private client: CartServiceClient;

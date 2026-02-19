@@ -5,7 +5,7 @@ import * as grpc from "@grpc/grpc-js"; // Import grpc
 
 // Instantiate CartGrpcClient
 const cartGrpcClient = new CartGrpcClient(
-  process.env.CART_GRPC_URL || "localhost:50050",
+  process.env.CART_GRPC_URL || "cart-crud:50050",
 );
 
 // PUT /api/cart/[userId]/items/[productId]
