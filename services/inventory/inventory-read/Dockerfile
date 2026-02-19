@@ -1,5 +1,5 @@
 # ---------- Stage 1: Build ----------
-FROM rust:latest AS builder
+FROM rust:bookworm AS builder
 
 # Accept DATABASE_URL as a build argument
 ARG DATABASE_URL
@@ -24,7 +24,7 @@ COPY services/inventory/inventory-read/build.rs ./services/inventory/inventory-r
 COPY services/inventory/inventory-read/src ./services/inventory/inventory-read/src
 
 # --- Copy shared proto definitions ---
-COPY shared/proto /app/shared/proto
+COPY shared/proto ./shared/proto
 
 # Change to the service's directory
 WORKDIR /app/services/inventory/inventory-read
@@ -35,11 +35,15 @@ COPY services/inventory/inventory-read/.sqlx ./.sqlx
 
 
 # --- Build ---
+WORKDIR /app/services/inventory/inventory-read
 RUN cargo build --release --bin inventory-read
 
 
 # ---------- Stage 2: Runtime ----------
 FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y libsasl2-2 && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary
 COPY --from=builder /app/services/inventory/inventory-read/target/release/inventory-read /usr/local/bin/inventory-read

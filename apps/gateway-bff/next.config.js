@@ -1,9 +1,7 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: "standalone",
-  /* config options here */
-  reactCompiler: true,
+
   env: {
     AUTH_SERVICE_GRPC_URL:
       process.env.AUTH_SERVICE_GRPC_URL || "localhost:50051",
@@ -14,4 +12,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

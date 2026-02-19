@@ -1,5 +1,5 @@
 # ---------- Stage 1: Build ----------
-FROM rust:latest AS builder
+FROM rust:bookworm AS builder
 
 # Accept DATABASE_URL as a build argument
 ARG DATABASE_URL
@@ -43,6 +43,9 @@ RUN cargo build --release --bin inventory-write
 
 # ---------- Stage 2: Runtime ----------
 FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y libsasl2-2 && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary
 COPY --from=builder /app/services/inventory/inventory-write/target/release/inventory-write /usr/local/bin/inventory-write

@@ -6,104 +6,84 @@ This repository contains the foundational microservices and frontend application
 
 The platform uses a Backend-For-Frontend (BFF) to expose its public API, coordinating with various backend microservices. Key architectural principles include:
 
-*   **Microservices:** Independent services for specific business capabilities.
-*   **Event-Driven Architecture (EDA):** Kafka for asynchronous communication and event streaming.
-*   **Saga Pattern:** Orchestration-based sagas (coordinated by `checkout-orchestrator`) for distributed transactions.
-*   **Polyglot Development:** Services written in TypeScript, Python, Java, and Rust.
+- **Microservices:** Independent services for specific business capabilities.
+- **Event-Driven Architecture (EDA):** Kafka for asynchronous communication and event streaming.
+- **Saga Pattern:** Orchestration-based sagas (coordinated by `checkout-orchestrator`) for distributed transactions.
+- **Polyglot Development:** Services written in TypeScript, Python, Java, and Rust.
 
 ## Prerequisites
 
 Ensure you have the following installed on your system:
 
-*   **Docker & Docker Compose:** For running core infrastructure (Postgres, Redis, Kafka).
-*   **Java Development Kit (JDK) 17+:** For Java-based microservices.
-*   **Maven:** For building and running Java services.
-*   **Node.js 20+:** For TypeScript/Next.js services.
-*   **pnpm:** A fast, disk space efficient package manager for Node.js projects (used in this monorepo).
-*   **Python 3.12+:** For Python-based microservices.
-*   **Poetry:** Python package and dependency manager (used for Python services).
-*   **Rust Toolchain:** For Rust-based microservices.
+- **Docker & Docker Compose:** For running core infrastructure (Postgres, Redis, Kafka).
+- **Java Development Kit (JDK) 17+:** For Java-based microservices.
+- **Maven:** For building and running Java services.
+- **Node.js 20+:** For TypeScript/Next.js services.
+- **pnpm:** A fast, disk space efficient package manager for Node.js projects (used in this monorepo).
+- **Python 3.12+:** For Python-based microservices.
+- **Poetry:** Python package and dependency manager (used for Python services).
+- **Rust Toolchain:** For Rust-based microservices.
 
 ## Local Development
 
 Follow these steps to get the entire platform running on your local machine.
 
-### 1. Start Core Infrastructure
+### 1. Start the Full Containerized Stack (Recommended)
 
-The shared infrastructure (Postgres, Redis, Kafka) is managed with Docker Compose.
-
-```sh
-docker-compose -f infra/docker/docker-compose.dev.yml up -d
-```
-
-You can check the status of the containers with `docker ps`.
-
-### 2. Run Backend Microservices
-
-Each microservice needs to be started individually, typically in a separate terminal.
-
-#### Java Services
-
-Run each in its respective directory:
-
-*   **`payment-gateway`:**
-    ```sh
-    cd services/orders/payment-gateway
-    ./mvnw spring-boot:run
-    ```
-*   **`order-create`:**
-    ```sh
-    cd services/orders/order-create
-    ./mvnw spring-boot:run
-    ```
-*   **`product-write`:**
-    ```sh
-    cd services/catalog/product-write
-    ./mvnw spring-boot:run
-    ```
-*   **`product-read`:**
-    ```sh
-    cd services/catalog/product-read
-    ./mvnw spring-boot:run
-    ```
-
-#### Python Services
-
-*   **`checkout-orchestrator`:**
-    ```sh
-    cd services/checkout/checkout-orchestrator
-    poetry install
-    poetry run uvicorn checkout_orchestrator.main:app --reload --port 8000
-    ```
-
-#### TypeScript Services
-
-*   **`cart-crud`:**
-    ```sh
-    cd services/cart/cart-crud
-    pnpm install
-    pnpm start
-    ```
-
-#### Rust Services
-
-*   **`inventory-write`:**
-    ```sh
-    cd services/inventory/inventory-write
-    cargo run
-    ```
-
-### 3. Run Frontend Application (Gateway-BFF)
-
-The Next.js Backend-For-Frontend application:
+The most straightforward way to run the entire platform is using the provided Docker Compose configuration. This will build and start all microservices and core infrastructure.
 
 ```sh
-cd apps/gateway-bff
-pnpm install
-pnpm dev
+docker compose -f infra/docker/docker-compose.dev.yml up --build -d
 ```
 
-Once running, the Gateway-BFF will be available at [http://localhost:3000](http://localhost:3000).
+You can monitor the logs for all services using:
+
+```sh
+docker compose -f infra/docker/docker-compose.dev.yml logs -f
+```
+
+### 2. Service Endpoints & Port Mappings
+
+Once the stack is running, you can access the various services at the following local endpoints:
+
+| Service                   | Host Port | Internal Port | Description                  |
+| :------------------------ | :-------- | :------------ | :--------------------------- |
+| **Gateway BFF**           | `3004`    | `3000`        | Public Next.js API & UI      |
+| **Cart CRUD**             | `3001`    | `3000`        | Cart management service      |
+| **Auth Service**          | `3002`    | `3002`        | User authentication (Java)   |
+| **Product Read**          | `8082`    | `8082`        | Catalog read service (Java)  |
+| **Product Write**         | `8081`    | `8081`        | Catalog write service (Java) |
+| **Inventory Write**       | `8088`    | `8080`        | Inventory updates (Rust)     |
+| **Inventory Read**        | `50052`   | `50052`       | Inventory read (Rust/gRPC)   |
+| **Checkout Orchestrator** | `8000`    | `8000`        | Saga coordinator (Python)    |
+| **Postgres**              | `5432`    | `5432`        | Main relational database     |
+| **Kafka**                 | `9092`    | `9092`        | Event streaming broker       |
+| **MinIO UI**              | `9001`    | `9001`        | Object storage dashboard     |
+| **MinIO API**             | `9005`    | `9002`        | Object storage API           |
+| **Prometheus**            | `9090`    | `9090`        | Metrics collection           |
+| **Grafana**               | `3003`    | `3000`        | Metrics visualization        |
+
+### 3. Individual Service Development (Alternative)
+
+If you prefer to run specific services natively for development while keeping core infrastructure in Docker:
+
+#### A. Start Core Infrastructure only
+
+```sh
+# Stop everything first if running
+docker compose -f infra/docker/docker-compose.dev.yml down
+# Start only the base infrastructure
+docker compose -f infra/docker/docker-compose.dev.yml up -d postgres redis kafka zookeeper
+```
+
+#### B. Run Backend Microservices Natively
+
+Each microservice can be started in its respective directory:
+
+- **Java (e.g., Auth):** `cd services/users/auth-service && ./mvnw spring-boot:run`
+- **Python (Checkout):** `cd services/checkout/checkout-orchestrator && poetry run uvicorn ...`
+- **Node.js (Cart):** `cd services/cart/cart-crud && pnpm start`
+- **Rust (Inventory):** `cd services/inventory/inventory-write && cargo run`
 
 ### 4. Trigger the Checkout Saga (Example)
 
@@ -123,6 +103,7 @@ curl -X POST http://localhost:3000/api/checkout/initiate \
 ```
 
 Expected Response (Happy Path):
+
 ```json
 {
   "message": "Checkout initiated successfully",
@@ -135,9 +116,9 @@ Expected Response (Happy Path):
 
 For a deeper understanding of the project, please refer to the comprehensive documentation:
 
-*   **[Architecture Overview](docs/architecture.md)**: A high-level view of the system's structure and principles.
-*   **[Failure Scenarios and Resilience](docs/failure-scenarios.md)**: Details on how the system handles failures, especially within distributed sagas.
-*   **[Architectural Tradeoffs](docs/tradeoffs.md)**: Discussion of the design choices made and their implications.
+- **[Architecture Overview](docs/architecture.md)**: A high-level view of the system's structure and principles.
+- **[Failure Scenarios and Resilience](docs/failure-scenarios.md)**: Details on how the system handles failures, especially within distributed sagas.
+- **[Architectural Tradeoffs](docs/tradeoffs.md)**: Discussion of the design choices made and their implications.
 
 ### Contributing
 

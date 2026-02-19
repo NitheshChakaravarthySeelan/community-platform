@@ -24,23 +24,9 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    // Placeholder for API call
-    // In a real app, you'd use your lib/api.ts here
-    // For now, let's simulate a successful login
-    if (email === "test@example.com" && password === "password123") {
-      // Simulate JWT token storage
-      localStorage.setItem("jwt_token", "dummy_jwt_token_from_login");
-      localStorage.setItem("user_id", "1");
-      localStorage.setItem("user_roles", "USER,ADMIN"); // Simulate roles
-      router.push("/"); // Redirect to homepage on success
-    } else {
-      setError("Invalid email or password. Please try again.");
-    }
-
-    // In a real scenario:
-    /*
     try {
-      const response = await fetch("/api/auth/login", { // This would go to gateway-bff
+      const response = await fetch("/api/auth/login", {
+        // This would go to gateway-bff
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -54,12 +40,11 @@ export default function LoginPage() {
       const data = await response.json();
       localStorage.setItem("jwt_token", data.jwtToken);
       localStorage.setItem("user_id", data.userId);
-      localStorage.setItem("user_roles", data.roles.join(','));
+      localStorage.setItem("user_roles", data.roles.join(","));
       router.push("/");
     } catch (err: any) {
       setError(err.message);
     }
-    */
   };
 
   return (

@@ -7,9 +7,16 @@ import {
   GetAllProductsResponse,
 } from "@proto/product_read_service";
 import { Product } from "@proto/product";
-import { makeGenericClientConstructor } from "@grpc/grpc-js"; // Import makeGenericClientConstructor
+import { makeGenericClientConstructor } from "@grpc/grpc-js";
+import path from "path";
 
-const PROTO_PATH = "../../shared/proto/product_read_service.proto";
+const PROTO_PATH = path.join(
+  process.cwd(),
+  "proto",
+  "product_read_service.proto",
+);
+
+// const PROTO_PATH = "../../shared/proto/product_read_service.proto";
 
 export class ProductReadGrpcClient {
   private client: ProductReadServiceClient;

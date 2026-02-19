@@ -10,9 +10,14 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B package -DskipTests -Dmaven.wagon
 # Stage 2: Create the final, lightweight container
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
+
+# Create a non-root user and group
+RUN groupadd --system springapp && useradd --system --uid 1001 --gid springapp springapp
+USER springapp
+
 # Copy the built JAR file from the 'build' stage
 # Note: The JAR file name might be different, adjust if needed.
-COPY --from=build /app/target/cart-pricing-0.0.1-SNAPSHOT.jar .
+COPY --from=build --chown=springapp:springapp /app/target/cart-pricing-0.0.1-SNAPSHOT.jar .
 EXPOSE 8084
 # Command to run the application
 ENTRYPOINT ["java", "-jar", "cart-pricing-0.0.1-SNAPSHOT.jar"]

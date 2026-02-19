@@ -5,5 +5,9 @@ COPY services/pricing/tax-calculation/src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests package -Dmaven.wagon.http.readTimeout=120000 -Dmaven.wagon.http.retryHandler.count=5
 
 FROM eclipse-temurin:17-jre
-COPY --from=build /app/target/tax-calculation-0.0.1-SNAPSHOT.jar /app/app.jar
+# Create a non-root user and group
+RUN groupadd --system springapp && useradd --system --uid 1001 --gid springapp springapp
+USER springapp
+
+COPY --from=build --chown=springapp:springapp /app/target/tax-calculation-0.0.1-SNAPSHOT.jar /app/app.jar
 ENTRYPOINT ["java","-jar","/app/app.jar"]
