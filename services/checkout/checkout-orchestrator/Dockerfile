@@ -24,12 +24,19 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Copy only requirements and application code from builder stage
-COPY --from=builder /app/requirements.txt ./requirements.txt
-COPY --from=builder /app/checkout_orchestrator ./checkout_orchestrator
+# Create a non-root user and group
+RUN groupadd --system pythonapp && useradd --system --uid 1001 --gid pythonapp pythonapp
+USER pythonapp
 
-# Install dependencies from requirements.txt
+# Copy only requirements and application code from builder stage
+COPY --from=builder --chown=pythonapp:pythonapp /app/requirements.txt ./requirements.txt
+COPY --from=builder --chown=pythonapp:pythonapp /app/checkout_orchestrator ./checkout_orchestrator
+
+# Install dependencies from requirements.txt (must run as root for system-wide installs if not in venv)
+# Revert to root for pip install, then switch back to non-root
+USER root
 RUN pip install --no-cache-dir -r requirements.txt
+USER pythonapp
 
 # Expose port (default for FastAPI/Uvicorn)
 EXPOSE 8000
