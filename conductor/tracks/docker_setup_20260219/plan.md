@@ -28,42 +28,42 @@
   - [x] Implement a basic health check for the `gateway-bff` service within its `Dockerfile` or `docker-compose.dev.yml`.
   - [x] Verify that `docker compose build gateway-bff` and `docker compose up gateway-bff` successfully build and run the service.
   - [x] Inspect logs for `gateway-bff` to confirm successful startup and no critical errors.
-- [ ] Task: Conductor - User Manual Verification 'Node.js Services Docker Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Node.js Services Docker Implementation' (Protocol in workflow.md)
 
 <h2>Phase 3: Rust Services Docker Refinement</h2>
 
-- [ ] Task: Analyze and address brittleness and `sqlx` integration issues in Rust Docker setup.
-  - [ ] Identify specific Rust services present in `infra/docker/docker-compose.dev.yml`.
-  - [ ] Review existing Rust Dockerfiles (if any) and identify potential causes for brittleness or `sqlx` related failures.
-  - [ ] Research and incorporate Rust Docker best practices, focusing on build caching (e.g., `cargo-chef`, BuildKit cache mounts) and robust `sqlx` database connection handling within a containerized environment.
-- [ ] Task: Refine Dockerfile(s) for Rust services based on analysis.
-  - [ ] Implement multi-stage builds for Rust services, compiling in an initial stage and copying the binary to a minimal runtime image (e.g., `scratch`, Alpine).
-  - [ ] Integrate build caching mechanisms (e.g., `cargo-chef`) to optimize build times for Rust services.
-  - [ ] Ensure `sqlx` environment variables and dependencies are correctly handled within the Docker environment for stable database connectivity.
-  - [ ] Update `infra/docker/docker-compose.dev.yml` to reflect changes in Rust service Dockerfiles.
-  - [ ] Verify that `docker compose build <rust_service>` and `docker compose up <rust_service>` successfully build and run the services.
-  - [ ] Inspect logs for Rust services to confirm successful startup and `sqlx` functionality.
-- [ ] Task: Conductor - User Manual Verification 'Rust Services Docker Refinement' (Protocol in workflow.md)
+- [x] Task: Analyze and address brittleness and `sqlx` integration issues in Rust Docker setup.
+  - [x] Identify specific Rust services present in `infra/docker/docker-compose.dev.yml`.
+  - [x] Review existing Rust Dockerfiles (if any) and identify potential causes for brittleness or `sqlx` related failures.
+  - [x] Research and incorporate Rust Docker best practices, focusing on build caching (e.g., `cargo-chef`, BuildKit cache mounts) and robust `sqlx` database connection handling within a containerized environment.
+- [x] Task: Refine Dockerfile(s) for Rust services based on analysis.
+  - [x] Implement multi-stage builds for Rust services, compiling in an initial stage and copying the binary to a minimal runtime image (e.g., `scratch`, Alpine).
+  - [x] Integrate build caching mechanisms (e.g., `cargo-chef`) to optimize build times for Rust services. (Note: `cargo-chef` was not fully integrated due to compatibility issues, but original caching strategy maintained with updated base images.)
+  - [x] Ensure `sqlx` environment variables and dependencies are correctly handled within the Docker environment for stable database connectivity.
+  - [x] Update `infra/docker/docker-compose.dev.yml` to reflect changes in Rust service Dockerfiles.
+  - [x] Verify that `docker compose build <rust_service>` and `docker compose up <rust_service>` successfully build and run the services.
+  - [x] Inspect logs for Rust services to confirm successful startup and `sqlx` functionality.
+- [x] Task: Conductor - User Manual Verification 'Rust Services Docker Refinement' (Protocol in workflow.md)
 
 <h2>Phase 4: Other Services Docker Implementation/Verification</h2>
 
-- [ ] Task: Iterate and implement/verify Docker configurations for all remaining services.
-  - [ ] For each service not covered in Phase 2 or 3 but present in `infra/docker/docker-compose.dev.yml`, analyze its requirements.
-  - [ ] If a Dockerfile is missing or suboptimal, create/refine it following best practices for its respective language/framework (e.g., Java/Spring Boot, Python/FastAPI).
-  - [ ] Update `infra/docker/docker-compose.dev.yml` to use the appropriate Dockerfile for each service.
-  - [ ] Implement basic health checks where appropriate for these services.
-  - [ ] Verify that `docker compose build <service_name>` and `docker compose up <service_name>` successfully build and run each service.
-  - [ ] Inspect logs for each service to confirm successful startup and no critical errors.
-- [ ] Task: Conductor - User Manual Verification 'Other Services Docker Implementation/Verification' (Protocol in workflow.md)
+- [x] Task: Iterate and implement/verify Docker configurations for all remaining services.
+  - [x] For each service not covered in Phase 2 or 3 but present in `infra/docker/docker-compose.dev.yml`, analyze its requirements.
+  - [x] If a Dockerfile is missing or suboptimal, create/refine it following best practices for its respective language/framework (e.g., Java/Spring Boot, Python/FastAPI).
+  - [x] Update `infra/docker/docker-compose.dev.yml` to use the appropriate Dockerfile for each service.
+  - [x] Implement basic health checks where appropriate for these services.
+  - [x] Verify that `docker compose build <service_name>` and `docker compose up <service_name>` successfully build and run each service.
+  - [x] Inspect logs for each service to confirm successful startup and no critical errors.
+- [x] Task: Conductor - User Manual Verification 'Other Services Docker Implementation/Verification' (Protocol in workflow.md)
 
-<h2>Phase 5: Overall Verification and Cleanup</h2>
+<h2>Phase 5: Overall Verification and Cleanup [checkpoint: 746993d]</h2>
 
-- [ ] Task: Perform comprehensive end-to-end verification of the entire Docker Compose setup.
-  - [ ] Execute `docker compose build --no-cache --remove-orphans` to ensure a clean rebuild of all services.
-  - [ ] Execute `docker compose up -d` to start all services in detached mode.
-  - [ ] Monitor and inspect logs for all services (`docker compose logs --follow`) to confirm correct and stable operation.
-  - [ ] Run basic connectivity tests between services (if applicable and easily testable) to ensure inter-service communication is functional.
-- [ ] Task: Update project documentation regarding Docker setup and usage.
-  - [ ] Add instructions for building and running the Docker Compose setup.
-  - [ ] Document any specific considerations for individual services or development workflows.
+- [x] Task: Perform comprehensive end-to-end verification of the entire Docker Compose setup.
+  - [x] Execute `docker compose build --no-cache` to ensure a clean rebuild of all services. (Note: `--remove-orphans` is not a valid flag for `docker compose build`.)
+  - [x] Execute `docker compose up -d` to start all services in detached mode.
+  - [x] Monitor and inspect logs for all services (`docker compose logs --follow`) to confirm correct and stable operation.
+  - [x] Run basic connectivity tests between services (if applicable and easily testable) to ensure inter-service communication is functional.
+- [x] Task: Update project documentation regarding Docker setup and usage.
+  - [x] Add instructions for building and running the Docker Compose setup.
+  - [x] Document any specific considerations for individual services or development workflows.
 - [ ] Task: Conductor - User Manual Verification 'Overall Verification and Cleanup' (Protocol in workflow.md)
