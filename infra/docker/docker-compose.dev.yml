@@ -80,11 +80,6 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/inventory/inventory-write/Dockerfile
-      network: host
-      extra_hosts:
-        - "repo.maven.apache.org:104.18.19.12"
-        - "repo1.maven.org:104.18.19.12"
-        - "registry.npmjs.org:104.16.2.34"
     container_name: inventory_write_dev
     dns:
       - 8.8.8.8
@@ -92,6 +87,8 @@ services:
     depends_on:
       - postgres
       - kafka
+    ports:
+      - "8088:8080"
     environment:
       - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
       - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
@@ -114,7 +111,10 @@ services:
       - 8.8.4.4
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     ports:
       - "3001:3000" # Mapping to 3001 on host to avoid conflict with Grafana
     environment:
@@ -178,9 +178,12 @@ services:
       - 8.8.4.4
 
     depends_on:
-      - postgres
-      - kafka
-      - schema-registry
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_started
     ports:
       - "8000:8000" # Maps to 8000 on host
     environment:
@@ -298,6 +301,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./../../services/inventory/inventory-write/init.sql:/docker-entrypoint-initdb.d/init_inventory_items.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
@@ -343,6 +351,11 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
@@ -410,11 +423,6 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-lookup-rust/Dockerfile
-      network: host
-      extra_hosts:
-        - "repo.maven.apache.org:104.18.19.12"
-        - "repo1.maven.org:104.18.19.12"
-        - "registry.npmjs.org:104.16.2.34"
     container_name: product_lookup_rust_dev
     dns:
       - 8.8.8.8
@@ -433,11 +441,6 @@ services:
     build:
       context: ../../
       dockerfile: services/inventory/inventory-read/Dockerfile
-      network: host
-      extra_hosts:
-        - "repo.maven.apache.org:104.18.19.12"
-        - "repo1.maven.org:104.18.19.12"
-        - "registry.npmjs.org:104.16.2.34"
     container_name: inventory_read_dev
     dns:
       - 8.8.8.8
@@ -520,7 +523,7 @@ services:
 
     ports:
       - "9001:9001" # Minio UI
-      - "9002:9002" # Minio API
+      - "9005:9002" # Minio API (Mapped to 9005 on host)
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
