@@ -64,7 +64,7 @@ export default function CreateProductPage() {
         price: Math.round(formData.price * 100), // Convert to cents
       };
 
-      const response = await apiRequest("/api/products", {
+      const response = await apiRequest<any>("/api/products", {
         method: "POST",
         token: token,
         headers: {

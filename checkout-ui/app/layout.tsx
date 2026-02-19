@@ -3,11 +3,12 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/hooks/useCart";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Header } from "@/components/layout/header"; // Import the new Header Client Component
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "CheckoutUI Frontend",
@@ -40,9 +41,13 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthProvider>
-            <Header /> {/* Render the new Header Client Component */}
-            <main className="flex-grow container mx-auto p-4">{children}</main>
-            <Footer />
+            <CartProvider>
+              <Header /> {/* Render the new Header Client Component */}
+              <main className="flex-grow container mx-auto p-4">
+                {children}
+              </main>
+              <Footer />
+            </CartProvider>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>
