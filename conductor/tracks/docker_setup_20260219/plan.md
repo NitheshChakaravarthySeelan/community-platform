@@ -2,14 +2,14 @@
 
 ## Phase 1: Repository Analysis and Dockerfile Strategy
 
-- [ ] Task: Analyze existing services and their dependencies for Dockerization.
-  - [ ] Identify all services explicitly mentioned in `infra/docker/docker-compose.dev.yml`.
-  - [ ] For each identified service, determine its primary programming language, framework, and typical build process.
-  - [ ] Investigate any existing Dockerfiles or Docker Compose configurations within the project to understand current patterns and conventions.
-  - [ ] Research and consolidate modern Dockerfile best practices for Node.js and Rust, specifically focusing on production-ready images (multi-stage builds, minimal base images, security, efficient caching).
-- [ ] Task: Define a comprehensive Dockerfile strategy for both development and production environments.
-  - [ ] Outline a common pattern or template for creating robust, production-ready Docker images for each identified language/framework.
-  - [ ] Plan for consistent handling of environment variables, potential secrets (without hardcoding), and standardized logging mechanisms across services.
+- [x] Task: Analyze existing services and their dependencies for Dockerization.
+  - [x] Identify all services explicitly mentioned in `infra/docker/docker-compose.dev.yml`.
+  - [x] For each identified service, determine its primary programming language, framework, and typical build process.
+  - [x] Investigate any existing Dockerfiles or Docker Compose configurations within the project to understand current patterns and conventions.
+  - [x] Research and consolidate modern Dockerfile best practices for Node.js and Rust, specifically focusing on production-ready images (multi-stage builds, minimal base images, security, efficient caching).
+- [x] Task: Define a comprehensive Dockerfile strategy for both development and production environments.
+  - [x] Outline a common pattern or template for creating robust, production-ready Docker images for each identified language/framework.
+  - [x] Plan for consistent handling of environment variables, potential secrets (without hardcoding), and standardized logging mechanisms across services.
 - [ ] Task: Conductor - User Manual Verification 'Repository Analysis and Dockerfile Strategy' (Protocol in workflow.md)
 
 ## Phase 2: Node.js Services Docker Implementation (`cart-crud` and `gateway-bff`)
