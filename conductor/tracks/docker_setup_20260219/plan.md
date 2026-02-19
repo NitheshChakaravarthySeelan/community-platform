@@ -10,24 +10,24 @@
 - [x] Task: Define a comprehensive Dockerfile strategy for both development and production environments.
   - [x] Outline a common pattern or template for creating robust, production-ready Docker images for each identified language/framework.
   - [x] Plan for consistent handling of environment variables, potential secrets (without hardcoding), and standardized logging mechanisms across services.
-- [ ] Task: Conductor - User Manual Verification 'Repository Analysis and Dockerfile Strategy' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Repository Analysis and Dockerfile Strategy' (Protocol in workflow.md)
 
-## Phase 2: Node.js Services Docker Implementation (`cart-crud` and `gateway-bff`)
+## Phase 2: Node.js Services Docker Implementation (`cart-crud` and `gateway-bff`) [checkpoint: 24dbd10]
 
-- [ ] Task: Implement/Refine Dockerfile and Docker Compose configuration for `cart-crud`.
-  - [ ] Analyze the `cart-crud` service's `package.json` and build scripts to understand its dependency management and build process.
-  - [ ] Create a new `Dockerfile` for `cart-crud` following multi-stage build best practices, using a minimal Node.js base image, and installing production dependencies only.
-  - [ ] Update `infra/docker/docker-compose.dev.yml` to utilize the newly created `Dockerfile` for `cart-crud`.
-  - [ ] Implement a basic health check for the `cart-crud` service within its `Dockerfile` or `docker-compose.dev.yml`.
-  - [ ] Verify that `docker compose build cart-crud` and `docker compose up cart-crud` successfully build and run the service.
-  - [ ] Inspect logs for `cart-crud` to confirm successful startup and no critical errors.
-- [ ] Task: Implement/Refine Dockerfile and Docker Compose configuration for `gateway-bff`.
-  - [ ] Analyze the `gateway-bff` service's `package.json` and build scripts to understand its dependency management and build process.
-  - [ ] Create a new `Dockerfile` for `gateway-bff` following multi-stage build best practices, using a minimal Node.js base image, and installing production dependencies only.
-  - [ ] Update `infra/docker/docker-compose.dev.yml` to utilize the newly created `Dockerfile` for `gateway-bff`.
-  - [ ] Implement a basic health check for the `gateway-bff` service within its `Dockerfile` or `docker-compose.dev.yml`.
-  - [ ] Verify that `docker compose build gateway-bff` and `docker compose up gateway-bff` successfully build and run the service.
-  - [ ] Inspect logs for `gateway-bff` to confirm successful startup and no critical errors.
+- [x] Task: Implement/Refine Dockerfile and Docker Compose configuration for `cart-crud`.
+  - [x] Analyze the `cart-crud` service's `package.json` and build scripts to understand its dependency management and build process.
+  - [x] Create a new `Dockerfile` for `cart-crud` following multi-stage build best practices, using a minimal Node.js base image, and installing production dependencies only.
+  - [x] Update `infra/docker/docker-compose.dev.yml` to utilize the newly created `Dockerfile` for `cart-crud`.
+  - [x] Implement a basic health check for the `cart-crud` service within its `Dockerfile` or `docker-compose.dev.yml`.
+  - [x] Verify that `docker compose build cart-crud` and `docker compose up cart-crud` successfully build and run the service.
+  - [x] Inspect logs for `cart-crud` to confirm successful startup and no critical errors.
+- [x] Task: Implement/Refine Dockerfile and Docker Compose configuration for `gateway-bff`.
+  - [x] Analyze the `gateway-bff` service's `package.json` and build scripts to understand its dependency management and build process.
+  - [x] Create a new `Dockerfile` for `gateway-bff` following multi-stage build best practices, using a minimal Node.js base image, and installing production dependencies only.
+  - [x] Update `infra/docker/docker-compose.dev.yml` to utilize the newly created `Dockerfile` for `gateway-bff`.
+  - [x] Implement a basic health check for the `gateway-bff` service within its `Dockerfile` or `docker-compose.dev.yml`.
+  - [x] Verify that `docker compose build gateway-bff` and `docker compose up gateway-bff` successfully build and run the service.
+  - [x] Inspect logs for `gateway-bff` to confirm successful startup and no critical errors.
 - [ ] Task: Conductor - User Manual Verification 'Node.js Services Docker Implementation' (Protocol in workflow.md)
 
 <h2>Phase 3: Rust Services Docker Refinement</h2>
