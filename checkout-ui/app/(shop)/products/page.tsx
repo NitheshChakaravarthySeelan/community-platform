@@ -2,6 +2,8 @@
 import { apiRequest } from "@/lib/api";
 import { ProductCard } from "@/components/product/product-card";
 
+export const dynamic = "force-dynamic";
+
 interface Product {
   id: string;
   name: string;

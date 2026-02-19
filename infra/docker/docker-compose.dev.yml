@@ -229,6 +229,7 @@ services:
       - NEXT_PUBLIC_TAX_CALCULATION_URL=http://tax-calculation:8087 # Correct gRPC URL
       - PRODUCT_WRITE_SERVICE_URL=http://product-write:8081
 
+
   cart-snapshot:
     build:
       context: ../../ # Monorepo root
