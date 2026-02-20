@@ -2,6 +2,7 @@ packages:
   - apps/*
   - services/*/*
   - shared/*
+  - checkout-ui
 
 onlyBuiltDependencies:
   - grpc-tools

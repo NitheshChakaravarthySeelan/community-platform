@@ -28,6 +28,7 @@ export const fail = (message: string, status = 400) => {
  * Wrapping the fetch calls to backend services
  */
 export const proxy = async (serviceUrl: string, options: RequestInit) => {
+  console.log(`Proxying request to: ${serviceUrl}`);
   try {
     const response = await fetch(serviceUrl, options);
     const contentType = response.headers.get("content-type");
@@ -38,11 +39,22 @@ export const proxy = async (serviceUrl: string, options: RequestInit) => {
     if (response.ok) {
       return success(data, response.status);
     } else {
-      return fail(data.message, response.status);
+      console.error(
+        `Proxy request failed with status ${response.status}:`,
+        data,
+      );
+      const errorMessage =
+        isJson && data.message
+          ? data.message
+          : typeof data === "string"
+            ? data
+            : JSON.stringify(data);
+      return fail(errorMessage, response.status);
     }
   } catch (error: Error | unknown) {
-    const mesasge =
+    const message =
       error instanceof Error ? error.message : "Something went wrong";
-    return fail(mesasge);
+    console.error(`Proxy request exception: ${message}`);
+    return fail(message);
   }
 };

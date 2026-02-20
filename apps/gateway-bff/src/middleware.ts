@@ -5,6 +5,14 @@ export const config = {
 };
 
 export async function middleware(request: NextRequest) {
+  // Allow public GET access to products
+  if (
+    request.nextUrl.pathname.startsWith("/api/products") &&
+    request.method === "GET"
+  ) {
+    return NextResponse.next();
+  }
+
   const jwtToken = request.cookies.get("jwtToken")?.value;
 
   if (!jwtToken) {
