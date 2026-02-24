@@ -46,22 +46,23 @@ docker compose -f infra/docker/docker-compose.dev.yml logs -f
 
 Once the stack is running, you can access the various services at the following local endpoints:
 
-| Service                   | Host Port | Internal Port | Description                  |
-| :------------------------ | :-------- | :------------ | :--------------------------- |
-| **Gateway BFF**           | `3004`    | `3000`        | Public Next.js API & UI      |
-| **Cart CRUD**             | `3001`    | `3000`        | Cart management service      |
-| **Auth Service**          | `3002`    | `3002`        | User authentication (Java)   |
-| **Product Read**          | `8082`    | `8082`        | Catalog read service (Java)  |
-| **Product Write**         | `8081`    | `8081`        | Catalog write service (Java) |
-| **Inventory Write**       | `8088`    | `8080`        | Inventory updates (Rust)     |
-| **Inventory Read**        | `50052`   | `50052`       | Inventory read (Rust/gRPC)   |
-| **Checkout Orchestrator** | `8000`    | `8000`        | Saga coordinator (Python)    |
-| **Postgres**              | `5432`    | `5432`        | Main relational database     |
-| **Kafka**                 | `9092`    | `9092`        | Event streaming broker       |
-| **MinIO UI**              | `9001`    | `9001`        | Object storage dashboard     |
-| **MinIO API**             | `9005`    | `9002`        | Object storage API           |
-| **Prometheus**            | `9090`    | `9090`        | Metrics collection           |
-| **Grafana**               | `3003`    | `3000`        | Metrics visualization        |
+| Service | Host Port | Internal Port | Description |
+| :------ | :-------- | :------------ | :---------- |
+
+| **Gateway BFF** | `3004` | `3000` | Public Next.js API & UI |
+| **Cart CRUD** | `3001` | `3000` | Cart management service |
+| **Auth Service** | `3002` | `3002` | User authentication (Java) |
+| **Product Read** | `8082` | `8082` | Catalog read service (Java) |
+| **Product Write** | `8081` | `8081` | Catalog write service (Java) |
+| **Inventory Write** | `8088` | `8080` | Inventory updates (Rust) |
+| **Inventory Read** | `50052` | `50052` | Inventory read (Rust/gRPC) |
+| **Checkout Orchestrator** | `8000` | `8000` | Saga coordinator (Python) |
+| **Postgres** | `5432` | `5432` | Main relational database |
+| **Kafka** | `9092` | `9092` | Event streaming broker |
+| **MinIO UI** | `9001` | `9001` | Object storage dashboard |
+| **MinIO API** | `9005` | `9002` | Object storage API |
+| **Prometheus** | `9090` | `9090` | Metrics collection |
+| **Grafana** | `3003` | `3000` | Metrics visualization |
 
 ### 3. Individual Service Development (Alternative)
 

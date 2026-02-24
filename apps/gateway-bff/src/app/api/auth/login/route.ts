@@ -1,36 +1,57 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { proxy } from "@/lib/httpResponse";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const option = {
+    const serviceUrl = `${process.env.AUTH_SERVICE_URL}/api/auth/login`;
+    console.log(`Proxying login request to: ${serviceUrl}`);
+
+    const response = await fetch(serviceUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    };
-    const response = await proxy(
-      `${process.env.AUTH_SERVICE_URL}/login`,
-      option,
-    );
-    const field = await response.json();
+    });
 
-    if (field.success) {
-      const jwtToken = field.data.jwtToken;
-      const cookieStore = (await cookies()).set("jwt_token", jwtToken, {
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error(
+        `Auth service returned non-JSON response (${response.status}):`,
+        text,
+      );
+      data = { message: text || "Internal Server Error from Auth Service" };
+    }
+
+    if (response.ok && data.jwtToken) {
+      const jwtToken = data.jwtToken;
+      const res = NextResponse.json(
+        { success: true, data },
+        { status: response.status },
+      );
+      res.cookies.set("jwt_token", jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV !== "production",
         sameSite: "strict",
         path: "/",
       });
+      return res;
+    } else {
+      console.error(`Login failed with status ${response.status}:`, data);
+      return NextResponse.json(
+        { success: false, ...data },
+        { status: response.status },
+      );
     }
-    return response;
   } catch (error: Error | unknown) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Something went wrong",
-    });
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    console.error(`Login route exception: ${message}`);
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

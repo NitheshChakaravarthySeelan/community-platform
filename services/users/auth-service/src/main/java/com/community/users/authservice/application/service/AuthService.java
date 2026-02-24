@@ -59,6 +59,19 @@ public class AuthService {
         }
     }
 
+    public User promoteToAdmin(String email) throws Exception {
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() -> new Exception("User not found"));
+
+        if (!user.getRoles().contains(Role.ADMIN)) {
+            user.getRoles().add(Role.ADMIN);
+            return userRepository.save(user);
+        }
+        return user;
+    }
+
     public User registerUser(User user) throws Exception {
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
         if (existingUser.isPresent()) {

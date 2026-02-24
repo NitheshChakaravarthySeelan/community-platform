@@ -26,6 +26,7 @@ export class CartGrpcClient {
       enums: String,
       defaults: true,
       oneofs: true,
+      includeDirs: [path.join(process.cwd(), "proto")],
     });
 
     this.client = new (makeGenericClientConstructor(

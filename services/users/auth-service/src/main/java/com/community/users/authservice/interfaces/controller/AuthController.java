@@ -9,6 +9,7 @@ import com.community.users.authservice.interfaces.dto.RegisterRequest;
 import com.community.users.authservice.interfaces.dto.UserValidationResponseDTO; // New import
 import jakarta.validation.Valid;
 import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             User newUser =
                     User.builder()
@@ -39,9 +40,23 @@ public class AuthController {
                             .roles(Collections.singletonList(Role.USER)) // Assign default role
                             .build();
             authService.registerUser(newUser);
-            return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("success", true, "message", "User registered successfully"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/promote")
+    public ResponseEntity<?> promoteToAdmin(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            User user = authService.promoteToAdmin(email); // Need to implement this in AuthService
+            return ResponseEntity.ok(Map.of("success", true, "message", "User promoted to ADMIN"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
