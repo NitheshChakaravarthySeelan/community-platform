@@ -7,6 +7,7 @@ WORKDIR /repo
 
 # Stage 1: Dependency Installation
 FROM base AS deps
+ENV GRPC_NODE_BUILD_FROM_SOURCE=true
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Next.js standalone build needs the package.json of the app and its dependencies
@@ -24,8 +25,11 @@ COPY . .
 
 # Build the specific service (checkout-ui)
 ENV CI=true
+ENV NEXT_FONT_GOOGLE_MOCK=1
+ENV NEXT_OTEL_FETCH_DISABLED=1
+# Re-run install for the filter to ensure symlinks are correct in this stage
+RUN pnpm install --filter checkout-ui --offline --ignore-scripts
 RUN pnpm --filter checkout-ui run build
-RUN ls -laR /repo/checkout-ui
 
 # Stage 3: Runner
 FROM base AS runner
@@ -42,8 +46,14 @@ ENV PORT 3000
 COPY --from=builder --chown=node:node /repo/checkout-ui/.next/standalone/. /app
 
 # Copy public assets and static assets
-COPY --from=builder --chown=node:node /repo/checkout-ui/public/. /app/public
-COPY --from=builder --chown=node:node /repo/checkout-ui/.next/static/. /app/.next/static
+# In standalone mode, server.js is at /app/checkout-ui/server.js
+# Next.js looks for public and static in two places depending on version/config:
+# 1. Next to server.js
+# 2. At the root of the standalone folder
+COPY --from=builder --chown=node:node /repo/checkout-ui/public /app/checkout-ui/public
+COPY --from=builder --chown=node:node /repo/checkout-ui/.next/static /app/checkout-ui/.next/static
+COPY --from=builder --chown=node:node /repo/checkout-ui/public /app/public
+COPY --from=builder --chown=node:node /repo/checkout-ui/.next/static /app/.next/static
 
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

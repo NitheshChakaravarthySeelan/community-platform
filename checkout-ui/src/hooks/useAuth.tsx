@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       user,
       isAuthenticated: true,
-      isAdmin: user.roles.includes("ADMIN"),
+      isAdmin: user.roles?.includes("ADMIN") || false,
     });
     router.push("/"); // Redirect to homepage after login
   };

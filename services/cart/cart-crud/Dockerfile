@@ -8,6 +8,7 @@ WORKDIR /repo
 
 # Stage 1: Dependency Installation (monorepo wide)
 FROM base AS deps
+ENV GRPC_NODE_BUILD_FROM_SOURCE=true
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY services/cart/cart-crud/package.json services/cart/cart-crud/
@@ -61,7 +62,7 @@ COPY --from=builder --chown=node:node /repo/pnpm-lock.yaml ./pnpm-lock.yaml
 # This circumvents permission issues with pnpm's store
 RUN pnpm install --prod --no-frozen-lockfile --ignore-scripts
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3000/ || exit 1
 EXPOSE 3000
 
 # Explicitly run as 'node' user using su -c

@@ -72,8 +72,8 @@ export const Auth = {
 
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_ID_KEY, user.userId);
-    localStorage.setItem(USER_ROLES_KEY, user.roles.join(","));
-    localStorage.setItem(USER_NAME_KEY, user.userName.username);
+    localStorage.setItem(USER_ROLES_KEY, user.roles?.join(",") || "");
+    localStorage.setItem(USER_NAME_KEY, user.userName?.username || "");
     localStorage.setItem(USER_EMAIL_KEY, user.email);
   },
 

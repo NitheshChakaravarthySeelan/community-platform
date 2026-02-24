@@ -13,17 +13,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ShoppingCartIcon } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
 
 // Header Component using shadcn/ui principles and better Tailwind
 export function Header() {
   // Renamed from HeaderContent to Header
   const { isAuthenticated, user, logout } = useAuth(); // Use the useAuth hook
+  const { cart } = useCart();
+
+  const cartItemCount =
+    cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <span className="font-bold inline-block">CheckoutUI Shop</span>
+          <span className="font-bold inline-block text-xl tracking-tight">
+            COMMUNITY SHOP
+          </span>
         </Link>
         <nav className="flex items-center space-x-4 lg:space-x-6">
           <Link
@@ -32,22 +40,25 @@ export function Header() {
           >
             Products
           </Link>
-          <Link
-            href="/cart"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Cart
-          </Link>
-          {user?.roles.includes("ADMIN") && (
+          {user?.roles?.includes("ADMIN") && (
             <Link
-              href="/admin/products/new"
-              className="text-sm font-medium transition-colors hover:text-primary"
+              href="/admin/products"
+              className="text-sm font-medium text-orange-600 transition-colors hover:text-orange-500"
             >
-              Admin
+              Admin Dashboard
             </Link>
           )}
         </nav>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <Link href="/cart" className="relative group p-2">
+            <ShoppingCartIcon className="h-6 w-6 transition-colors group-hover:text-primary" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {cartItemCount}
+              </span>
+            )}
+          </Link>
+
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -77,6 +88,30 @@ export function Header() {
                     </p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/auth/promote", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: user?.email }),
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        alert(
+                          "Promoted to ADMIN! Please log out and log back in to see changes.",
+                        );
+                      } else {
+                        alert("Failed: " + data.message);
+                      }
+                    } catch (err) {
+                      alert("Error promoting user");
+                    }
+                  }}
+                >
+                  Promote to Admin (Dev)
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>

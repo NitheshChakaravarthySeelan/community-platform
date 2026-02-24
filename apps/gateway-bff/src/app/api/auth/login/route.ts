@@ -15,9 +15,20 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error(
+        `Auth service returned non-JSON response (${response.status}):`,
+        text,
+      );
+      data = { message: text || "Internal Server Error from Auth Service" };
+    }
 
-    if (response.ok) {
+    if (response.ok && data.jwtToken) {
       const jwtToken = data.jwtToken;
       const res = NextResponse.json(
         { success: true, data },

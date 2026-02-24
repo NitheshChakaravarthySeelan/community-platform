@@ -8,6 +8,7 @@ WORKDIR /repo
 
 # Stage 1: Dependency Installation (monorepo wide)
 FROM base AS deps
+ENV GRPC_NODE_BUILD_FROM_SOURCE=true
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/*/package.json apps/
@@ -52,10 +53,13 @@ ENV PORT 3004 # Keep original port
 COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/standalone/. /app
 
 # Copy public assets and static assets (these are separate from standalone output usually)
-COPY --from=builder --chown=node:node /repo/apps/gateway-bff/public/. /app/public
-COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/static/. /app/.next/static
+# In standalone mode, server.js is at /app/apps/gateway-bff/server.js
+COPY --from=builder --chown=node:node /repo/apps/gateway-bff/public /app/apps/gateway-bff/public
+COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/static /app/apps/gateway-bff/.next/static
+COPY --from=builder --chown=node:node /repo/apps/gateway-bff/public /app/public
+COPY --from=builder --chown=node:node /repo/apps/gateway-bff/.next/static /app/.next/static
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3000/ || exit 1 # Health check to root path (internal port)
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:3004/ || exit 1 # Health check to root path (internal port)
 
 EXPOSE 3004
 

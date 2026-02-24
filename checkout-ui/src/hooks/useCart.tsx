@@ -59,7 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       // API call to gateway-bff, which then calls cart-crud
-      const response = await apiRequest<Cart>(`/api/v1/carts/${user.userId}`, {
+      const response = await apiRequest<Cart>(`/api/cart/${user.userId}`, {
         token,
       });
       setCart(response);
@@ -96,14 +96,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      const response = await apiRequest<Cart>(
-        `/api/v1/carts/${user.userId}/items`,
-        {
-          method: "POST",
-          token,
-          body: JSON.stringify({ productId, quantity }),
-        },
-      );
+      const response = await apiRequest<Cart>(`/api/cart/${user.userId}`, {
+        method: "POST",
+        token,
+        body: JSON.stringify({ productId, quantity }),
+      });
       setCart(response);
       toast({
         title: "Item Added",
@@ -133,7 +130,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     try {
       const response = await apiRequest<Cart>(
-        `/api/v1/carts/${user.userId}/items/${productId}`,
+        `/api/cart/${user.userId}/items/${productId}`,
         {
           method: "PUT",
           token,
@@ -162,7 +159,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     try {
       const response = await apiRequest<Cart>(
-        `/api/v1/carts/${user.userId}/items/${productId}`,
+        `/api/cart/${user.userId}/items/${productId}`,
         {
           method: "DELETE",
           token,

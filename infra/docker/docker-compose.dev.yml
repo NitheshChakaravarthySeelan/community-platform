@@ -105,6 +105,7 @@ services:
         - "repo.maven.apache.org:104.18.19.12"
         - "repo1.maven.org:104.18.19.12"
         - "registry.npmjs.org:104.16.2.34"
+        - "node-precompiled-binaries.grpc.io:104.21.13.85"
     container_name: cart_crud_dev
     dns:
       - 8.8.8.8
@@ -117,6 +118,7 @@ services:
         condition: service_healthy
     ports:
       - "3001:3000" # Mapping to 3001 on host to avoid conflict with Grafana
+      - "50050:50050" # Map gRPC port
     environment:
       - PORT=3000
       - DB_HOST=postgres_dev
@@ -197,10 +199,12 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: apps/gateway-bff/Dockerfile # Specify the Dockerfile path
+      network: host
       extra_hosts:
         - "repo.maven.apache.org:104.18.19.12"
         - "repo1.maven.org:104.18.19.12"
         - "registry.npmjs.org:104.16.2.34"
+        - "node-precompiled-binaries.grpc.io:104.21.13.85"
     container_name: gateway_bff_dev
     dns:
       - 8.8.8.8
@@ -228,6 +232,34 @@ services:
       - NEXT_PUBLIC_DISCOUNT_ENGINE_URL=http://discount-engine:8085
       - NEXT_PUBLIC_TAX_CALCULATION_URL=http://tax-calculation:8087 # Correct gRPC URL
       - PRODUCT_WRITE_SERVICE_URL=http://product-write:8081
+      - AUTH_SERVICE_URL=http://auth-service:3002
+
+  # checkout-ui:
+  #   build:
+  #     context: ../../ # Monorepo root
+  #     dockerfile: checkout-ui/Dockerfile
+  #     network: host
+  #     extra_hosts:
+  #       - "node-precompiled-binaries.grpc.io:104.21.13.85"
+  #       - "registry.npmjs.org:104.16.2.34"
+  #   container_name: checkout_ui_dev
+  #   dns:
+  #     - 8.8.8.8
+  #     - 8.8.4.4
+  #   depends_on:
+  #     - gateway-bff
+  #   ports:
+  #     - "3005:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3000
+  #     - NEXT_PUBLIC_API_BASE_URL=http://localhost:3004 # Host address for client-side calls
+  #     - INTERNAL_API_BASE_URL=http://gateway-bff:3000 # Internal Docker address for server-side calls
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
 
 
   cart-snapshot:

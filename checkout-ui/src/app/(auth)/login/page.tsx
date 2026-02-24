@@ -14,72 +14,56 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function RegisterPage() {
-  const [username, setUsername] = useState("");
+import { useAuth } from "@/hooks/useAuth";
+
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Placeholder for API call
-    // In a real app, you'd use your lib/api.ts here
-    // For now, simulate success
-    if (username && email && password) {
-      console.log("Registering user:", { username, email, password });
-      // Simulate success and redirect to login
-      router.push("/login");
-    } else {
-      setError("Please fill in all fields.");
-    }
-
-    // In a real scenario:
-    /*
     try {
-      const response = await fetch("/api/auth/register", { // This would go to gateway-bff
+      const response = await fetch("/api/auth/login", {
+        // This would go to gateway-bff
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+        throw new Error(result.message || "Login failed");
       }
 
-      // Optionally, automatically log in or redirect to login page
-      router.push("/login");
+      // result.data contains { jwtToken, userId, userName, email, roles }
+      if (result.success && result.data) {
+        const { jwtToken, ...user } = result.data;
+        login(jwtToken, user);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (err: any) {
       setError(err.message);
     }
-    */
   };
 
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">Register</CardTitle>
+        <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Enter your details below to create an account
+          Enter your email below to login to your account
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleLogin}>
           <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="john.doe"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -92,7 +76,15 @@ export default function RegisterPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="#"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -103,14 +95,17 @@ export default function RegisterPage() {
             </div>
             {error && <p className="text-destructive text-sm">{error}</p>}
             <Button type="submit" className="w-full">
-              Create an account
+              Login
+            </Button>
+            <Button variant="outline" className="w-full">
+              Login with Google
             </Button>
           </div>
         </form>
         <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/login" className="underline">
-            Login
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="underline">
+            Sign up
           </Link>
         </div>
       </CardContent>
