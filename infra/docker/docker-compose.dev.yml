@@ -233,33 +233,37 @@ services:
       - NEXT_PUBLIC_TAX_CALCULATION_URL=http://tax-calculation:8087 # Correct gRPC URL
       - PRODUCT_WRITE_SERVICE_URL=http://product-write:8081
       - AUTH_SERVICE_URL=http://auth-service:3002
+      - ORDER_CREATE_SERVICE_URL=http://order-create:8094
+      - ORDER_READ_SERVICE_URL=http://order-read:8095
+      - PAYMENT_GATEWAY_SERVICE_URL=http://payment-gateway:8097
+      - CHECKOUT_ORCHESTRATOR_URL=http://checkout-orchestrator:8000/api
 
-  # checkout-ui:
-  #   build:
-  #     context: ../../ # Monorepo root
-  #     dockerfile: checkout-ui/Dockerfile
-  #     network: host
-  #     extra_hosts:
-  #       - "node-precompiled-binaries.grpc.io:104.21.13.85"
-  #       - "registry.npmjs.org:104.16.2.34"
-  #   container_name: checkout_ui_dev
-  #   dns:
-  #     - 8.8.8.8
-  #     - 8.8.4.4
-  #   depends_on:
-  #     - gateway-bff
-  #   ports:
-  #     - "3005:3000"
-  #   environment:
-  #     - NODE_ENV=development
-  #     - PORT=3000
-  #     - NEXT_PUBLIC_API_BASE_URL=http://localhost:3004 # Host address for client-side calls
-  #     - INTERNAL_API_BASE_URL=http://gateway-bff:3000 # Internal Docker address for server-side calls
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
+  checkout-ui:
+    build:
+      context: ../../ # Monorepo root
+      dockerfile: checkout-ui/Dockerfile
+      network: host
+      extra_hosts:
+        - "node-precompiled-binaries.grpc.io:104.21.13.85"
+        - "registry.npmjs.org:104.16.2.34"
+    container_name: checkout_ui_dev
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - gateway-bff
+    ports:
+      - "3005:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3004 # Host address for client-side calls
+      - INTERNAL_API_BASE_URL=http://gateway_bff_dev:3000 # Internal Docker address for server-side calls
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 
   cart-snapshot:
@@ -563,6 +567,73 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+
+  order-create:
+    build:
+      context: ../../
+      dockerfile: services/orders/order-create/Dockerfile
+      network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
+    container_name: order_create_dev
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8094:8094"
+    environment:
+      - SERVER_PORT=8094
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  order-read:
+    build:
+      context: ../../
+      dockerfile: services/orders/order-read/Dockerfile
+      network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
+    container_name: order_read_dev
+    depends_on:
+      - postgres
+    ports:
+      - "8095:8095"
+    environment:
+      - SERVER_PORT=8095
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  payment-gateway:
+    build:
+      context: ../../
+      dockerfile: services/orders/payment-gateway/Dockerfile
+      network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
+    container_name: payment_gateway_dev
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8097:8097"
+    environment:
+      - SERVER_PORT=8097
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
 volumes:
   postgres_data:
