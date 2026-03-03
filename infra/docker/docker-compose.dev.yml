@@ -237,6 +237,8 @@ services:
       - ORDER_READ_SERVICE_URL=http://order-read:8095
       - PAYMENT_GATEWAY_SERVICE_URL=http://payment-gateway:8097
       - CHECKOUT_ORCHESTRATOR_URL=http://checkout-orchestrator:8000/api
+      - SEARCH_SERVICE_GRPC_URL=search_query_dev:50053
+      - NEXT_PUBLIC_SEARCH_API_URL=/api/search
 
   checkout-ui:
     build:
@@ -568,6 +570,53 @@ services:
     volumes:
       - minio_data:/data
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: meilisearch_dev
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=masterKey # In prod, use a strong secret
+      - MEILI_ENV=development
+    volumes:
+      - meili_data:/meili_data
+
+  search-index:
+    build:
+      context: ../../
+      dockerfile: services/search/search-index/Dockerfile
+    container_name: search_index_dev
+    depends_on:
+      - kafka
+      - meilisearch
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - PRODUCT_EVENTS_TOPIC=product-events
+      - KAFKA_GROUP_ID=search-index-group
+      - MEILISEARCH_URL=http://meilisearch_dev:7700
+      - MEILISEARCH_API_KEY=masterKey
+      - MEILISEARCH_INDEX=products
+      - RUST_LOG=info
+
+  search-query:
+    build:
+      context: ../../
+      dockerfile: services/search/search-query/Dockerfile
+    container_name: search_query_dev
+    depends_on:
+      - meilisearch
+    ports:
+      - "50053:50053"
+    environment:
+      - MEILISEARCH_URL=http://meilisearch_dev:7700
+      - MEILISEARCH_API_KEY=masterKey
+      - MEILISEARCH_INDEX=products
+      - GRPC_SERVER_PORT=50053
+      - RUST_LOG=info
+
   order-create:
     build:
       context: ../../
@@ -641,3 +690,4 @@ volumes:
   prometheus_data:
   grafana_data:
   minio_data:
+  meili_data:

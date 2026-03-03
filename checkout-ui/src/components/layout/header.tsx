@@ -13,17 +13,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShoppingCartIcon } from "lucide-react";
+import { ShoppingCartIcon, SearchIcon } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // Header Component using shadcn/ui principles and better Tailwind
 export function Header() {
-  // Renamed from HeaderContent to Header
-  const { isAuthenticated, user, logout } = useAuth(); // Use the useAuth hook
+  const { isAuthenticated, user, logout } = useAuth();
   const { cart } = useCart();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const cartItemCount =
     cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      router.push(`/search?q=${encodeURIComponent(debouncedSearchTerm)}`);
+    } else if (searchTerm === "" && searchParams.get("q")) {
+      router.push("/");
+    }
+  }, [debouncedSearchTerm, router]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,6 +48,18 @@ export function Header() {
             COMMUNITY SHOP
           </span>
         </Link>
+        <div className="hidden md:flex flex-1 items-center justify-center px-4">
+          <div className="relative w-full max-w-md">
+            <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search products..."
+              className="w-full bg-background pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         <nav className="flex items-center space-x-4 lg:space-x-6">
           <Link
             href="/products"
