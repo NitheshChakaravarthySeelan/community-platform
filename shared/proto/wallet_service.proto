@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package wallet;
+
+option java_package = "com.community.platform.shared.proto.wallet";
+option java_multiple_files = true;
+option go_package = "github.com/community-platform/shared/proto/wallet;wallet";
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Commands ---
+
+message DebitWalletCommand {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  int64 amount_cents = 3;
+  string reason = 4;
+}
+
+message CreditWalletCommand {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  int64 amount_cents = 3;
+  string reason = 4;
+}
+
+// --- Events ---
+
+message WalletDebitedEvent {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  int64 debited_amount_cents = 3;
+  int64 current_balance_cents = 4;
+}
+
+message WalletDebitFailedEvent {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  string reason = 3;
+}
+
+message WalletCreditedEvent {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  int64 credited_amount_cents = 3;
+  int64 current_balance_cents = 4;
+}

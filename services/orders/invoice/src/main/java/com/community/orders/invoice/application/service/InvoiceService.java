@@ -4,10 +4,12 @@ import com.community.orders.invoice.domain.model.Invoice;
 import com.community.orders.invoice.domain.model.InvoiceItem;
 import com.community.orders.invoice.domain.repository.InvoiceRepository;
 import com.community.orders.invoice.interfaces.dto.InvoiceItemDTO;
-import com.community.orders.invoice.interfaces.dto.InvoiceRequest;
 import com.community.orders.invoice.interfaces.dto.InvoiceResponse;
+import com.community.platform.shared.proto.invoice.GenerateInvoiceCommand;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -21,34 +23,48 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
 
     @Transactional
-    public InvoiceResponse createInvoice(InvoiceRequest request) {
+    public InvoiceResponse generateInvoice(GenerateInvoiceCommand command) {
+        String sagaId = command.getMetadata().getSagaId();
+
+        // Idempotency check
+        Optional<Invoice> existing = invoiceRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            return mapToResponse(existing.get());
+        }
+
         List<InvoiceItem> invoiceItems =
-                request.getItems().stream()
+                command.getItemsList().stream()
                         .map(
-                                itemDTO ->
+                                item ->
                                         InvoiceItem.builder()
-                                                .productId(itemDTO.getProductId())
-                                                .productName(itemDTO.getProductName())
-                                                .quantity(itemDTO.getQuantity())
-                                                .unitPrice(itemDTO.getUnitPrice())
-                                                .totalPrice(itemDTO.getTotalPrice())
+                                                .productId(UUID.fromString(item.getProductId()))
+                                                .productName(item.getName())
+                                                .quantity(item.getQuantity())
+                                                .unitPrice(
+                                                        BigDecimal.valueOf(item.getUnitPriceCents())
+                                                                .divide(BigDecimal.valueOf(100)))
+                                                .totalPrice(
+                                                        BigDecimal.valueOf(
+                                                                        item.getTotalPriceCents())
+                                                                .divide(BigDecimal.valueOf(100)))
                                                 .build())
                         .collect(Collectors.toList());
 
         Invoice invoice =
                 Invoice.builder()
-                        .orderId(request.getOrderId())
-                        .userId(request.getUserId())
+                        .sagaId(sagaId)
+                        .orderId(UUID.fromString(command.getOrderId()))
+                        .userId(UUID.fromString(command.getUserId()))
                         .items(invoiceItems)
-                        .totalAmount(request.getTotalAmount())
-                        .currency(request.getCurrency())
+                        .totalAmount(
+                                BigDecimal.valueOf(command.getTotalCents())
+                                        .divide(BigDecimal.valueOf(100)))
+                        .currency("USD")
                         .invoiceDate(Instant.now())
-                        .paymentStatus("PENDING") // Default status
+                        .paymentStatus("PAID") // In our saga, it's paid before invoice generation
                         .build();
 
-        // Establish bi-directional relationship
         invoiceItems.forEach(item -> item.setInvoice(invoice));
-
         Invoice savedInvoice = invoiceRepository.save(invoice);
         return mapToResponse(savedInvoice);
     }
@@ -68,7 +84,14 @@ public class InvoiceService {
     private InvoiceResponse mapToResponse(Invoice invoice) {
         List<InvoiceItemDTO> itemDTOs =
                 invoice.getItems().stream()
-                        .map(this::mapInvoiceItemToDTO)
+                        .map(
+                                item ->
+                                        new InvoiceItemDTO(
+                                                item.getProductId(),
+                                                item.getProductName(),
+                                                item.getQuantity(),
+                                                item.getUnitPrice(),
+                                                item.getTotalPrice()))
                         .collect(Collectors.toList());
 
         return new InvoiceResponse(
@@ -80,14 +103,5 @@ public class InvoiceService {
                 invoice.getCurrency(),
                 invoice.getInvoiceDate(),
                 invoice.getPaymentStatus());
-    }
-
-    private InvoiceItemDTO mapInvoiceItemToDTO(InvoiceItem item) {
-        return new InvoiceItemDTO(
-                item.getProductId(),
-                item.getProductName(),
-                item.getQuantity(),
-                item.getUnitPrice(),
-                item.getTotalPrice());
     }
 }

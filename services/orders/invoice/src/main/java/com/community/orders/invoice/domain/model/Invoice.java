@@ -23,6 +23,9 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID invoiceId;
 
+    @Column(unique = true)
+    private String sagaId;
+
     @Column(nullable = false, unique = true)
     private UUID orderId; // Link to the order
 

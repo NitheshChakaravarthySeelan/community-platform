@@ -4,15 +4,16 @@ import com.community.orders.wallet.domain.model.Wallet;
 import com.community.orders.wallet.domain.model.WalletTransaction;
 import com.community.orders.wallet.domain.repository.WalletRepository;
 import com.community.orders.wallet.domain.repository.WalletTransactionRepository;
-import com.community.orders.wallet.interfaces.dto.WalletRequest;
 import com.community.orders.wallet.interfaces.dto.WalletResponse;
+import com.community.platform.shared.proto.wallet.CreditWalletCommand;
+import com.community.platform.shared.proto.wallet.DebitWalletCommand;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,72 +23,110 @@ public class WalletService {
     private final WalletTransactionRepository walletTransactionRepository;
 
     @Transactional
-    public WalletResponse creditWallet(UUID userId, WalletRequest request) {
-        Wallet wallet = walletRepository.findById(userId)
-                .orElseGet(() -> createNewWallet(userId)); // Create if not exists
+    public WalletResponse debitWallet(DebitWalletCommand command) {
+        String sagaId = command.getMetadata().getSagaId();
+        UUID userId = UUID.fromString(command.getUserId());
 
-        wallet.credit(request.getAmount());
-        Wallet updatedWallet = walletRepository.save(wallet);
+        Optional<WalletTransaction> existing = walletTransactionRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            Wallet wallet = walletRepository.findById(userId).get();
+            return mapToResponse(wallet, existing.get());
+        }
 
-        WalletTransaction transaction = recordTransaction(userId, request, "CREDIT", "SUCCESS", updatedWallet.getBalance());
-        return mapToResponse(updatedWallet, transaction);
-    }
+        Wallet wallet =
+                walletRepository
+                        .findById(userId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Wallet not found for user ID: " + userId));
 
-    @Transactional
-    public WalletResponse debitWallet(UUID userId, WalletRequest request) {
-        Wallet wallet = walletRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user ID: " + userId));
+        BigDecimal amount =
+                BigDecimal.valueOf(command.getAmountCents()).divide(BigDecimal.valueOf(100));
 
         try {
-            wallet.debit(request.getAmount());
+            wallet.debit(amount);
             Wallet updatedWallet = walletRepository.save(wallet);
-            WalletTransaction transaction = recordTransaction(userId, request, "DEBIT", "SUCCESS", updatedWallet.getBalance());
+            WalletTransaction transaction =
+                    recordTransaction(
+                            userId,
+                            sagaId,
+                            amount,
+                            "DEBIT",
+                            "SUCCESS",
+                            updatedWallet.getBalance(),
+                            null);
             return mapToResponse(updatedWallet, transaction);
         } catch (IllegalArgumentException e) {
-            WalletTransaction transaction = recordTransaction(userId, request, "DEBIT", "FAILED", wallet.getBalance());
-            transaction.setMessage(e.getMessage());
-            walletTransactionRepository.save(transaction); // Save failed transaction
-            throw e; // Re-throw to inform controller
+            recordTransaction(
+                    userId, sagaId, amount, "DEBIT", "FAILED", wallet.getBalance(), e.getMessage());
+            throw e;
         }
     }
 
-    @Transactional(readOnly = true)
-    public WalletResponse getWalletBalance(UUID userId) {
-        Wallet wallet = walletRepository.findById(userId)
-                .orElseGet(() -> createNewWallet(userId)); // Create if not exists, for consistency
+    @Transactional
+    public WalletResponse creditWallet(CreditWalletCommand command) {
+        String sagaId = command.getMetadata().getSagaId();
+        UUID userId = UUID.fromString(command.getUserId());
 
-        // For read operations, we don't create a transaction record unless specified
-        return new WalletResponse(
-                null, // No specific transaction ID for a balance inquiry
-                wallet.getUserId(),
-                BigDecimal.ZERO, // No amount for a balance inquiry
-                wallet.getBalance(),
-                null, // No type for a balance inquiry
-                "SUCCESS",
-                "Current balance",
-                Instant.now(),
-                null // No reference ID
-        );
+        Optional<WalletTransaction> existing = walletTransactionRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            Wallet wallet = walletRepository.findById(userId).get();
+            return mapToResponse(wallet, existing.get());
+        }
+
+        Wallet wallet = walletRepository.findById(userId).orElseGet(() -> createNewWallet(userId));
+
+        BigDecimal amount =
+                BigDecimal.valueOf(command.getAmountCents()).divide(BigDecimal.valueOf(100));
+        wallet.credit(amount);
+        Wallet updatedWallet = walletRepository.save(wallet);
+
+        WalletTransaction transaction =
+                recordTransaction(
+                        userId,
+                        sagaId,
+                        amount,
+                        "CREDIT",
+                        "SUCCESS",
+                        updatedWallet.getBalance(),
+                        null);
+        return mapToResponse(updatedWallet, transaction);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getWalletBalance(UUID userId) {
+        return walletRepository.findById(userId).map(Wallet::getBalance).orElse(BigDecimal.ZERO);
     }
 
     private Wallet createNewWallet(UUID userId) {
-        Wallet newWallet = Wallet.builder()
-                .userId(userId)
-                .balance(BigDecimal.ZERO)
-                .build();
+        Wallet newWallet = Wallet.builder().userId(userId).balance(BigDecimal.ZERO).build();
         return walletRepository.save(newWallet);
     }
 
-    private WalletTransaction recordTransaction(UUID userId, WalletRequest request, String type, String status, BigDecimal newBalance) {
-        WalletTransaction transaction = WalletTransaction.builder()
-                .userId(userId)
-                .amount(request.getAmount())
-                .transactionType(type)
-                .status(status)
-                .message(String.format("%s of %s %s. New balance: %s", type, request.getAmount(), status, newBalance))
-                .timestamp(Instant.now())
-                .referenceId(request.getReferenceId())
-                .build();
+    private WalletTransaction recordTransaction(
+            UUID userId,
+            String sagaId,
+            BigDecimal amount,
+            String type,
+            String status,
+            BigDecimal newBalance,
+            String message) {
+        String msg =
+                (message != null)
+                        ? message
+                        : String.format(
+                                "%s of %s %s. New balance: %s", type, amount, status, newBalance);
+        WalletTransaction transaction =
+                WalletTransaction.builder()
+                        .userId(userId)
+                        .sagaId(sagaId)
+                        .amount(amount)
+                        .transactionType(type)
+                        .status(status)
+                        .message(msg)
+                        .timestamp(Instant.now())
+                        .build();
         return walletTransactionRepository.save(transaction);
     }
 
@@ -101,7 +140,6 @@ public class WalletService {
                 transaction.getStatus(),
                 transaction.getMessage(),
                 transaction.getTimestamp(),
-                transaction.getReferenceId()
-        );
+                null);
     }
 }

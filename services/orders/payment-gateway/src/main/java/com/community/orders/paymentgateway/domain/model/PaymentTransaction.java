@@ -20,6 +20,9 @@ public class PaymentTransaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID transactionId;
 
+    @Column(unique = true)
+    private String sagaId;
+
     @Column(nullable = false)
     private UUID orderId;
 

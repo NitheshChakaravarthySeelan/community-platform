@@ -18,50 +18,50 @@ import java.util.UUID;
 @Component
 public class CreateProductHandler {
 
-    private final ProductRepository productRepository;
-    private final ProductEventPublisher productEventPublisher; // Inject ProductEventPublisher
-    private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "PRODUCT_MANAGER");
+  private final ProductRepository productRepository;
+  private final ProductEventPublisher productEventPublisher; // Inject ProductEventPublisher
+  private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "USER");
 
-    public CreateProductHandler(ProductRepository productRepository, ProductEventPublisher productEventPublisher) {
-        this.productRepository = productRepository;
-        this.productEventPublisher = productEventPublisher;
+  public CreateProductHandler(ProductRepository productRepository, ProductEventPublisher productEventPublisher) {
+    this.productRepository = productRepository;
+    this.productEventPublisher = productEventPublisher;
+  }
+
+  @Transactional
+  @CacheEvict(value = "products", allEntries = true)
+  public Product handle(CreateProductCommand command) {
+    // 1. Authorize
+    if (command.getUserRoles().stream().noneMatch(REQUIRED_ROLES::contains)) {
+      throw new ForbiddenException("User does not have the required role to create a product.");
     }
 
-    @Transactional
-    @CacheEvict(value = "products", allEntries = true) // <--- Add this annotation
-    public Product handle(CreateProductCommand command) {
-        // 1. Authorize
-        if (command.getUserRoles().stream().noneMatch(REQUIRED_ROLES::contains)) {
-            throw new ForbiddenException("User does not have the required role to create a product.");
-        }
+    // 2. Check for conflicts
+    productRepository.findBySku(command.getSku()).ifPresent(p -> {
+      throw new ProductAlreadyExistsException("Product with SKU '" + command.getSku() + "' already exists.");
+    });
 
-        // 2. Check for conflicts
-        productRepository.findBySku(command.getSku()).ifPresent(p -> {
-            throw new ProductAlreadyExistsException("Product with SKU '" + command.getSku() + "' already exists.");
-        });
+    // 3. Enrich and Map
+    Product product = Product.builder()
+        .id(UUID.randomUUID())
+        .name(command.getName())
+        .description(command.getDescription())
+        .price(command.getPrice())
+        .stockQuantity(command.getStockQuantity())
+        .sku(command.getSku())
+        .imageUrl(command.getImageUrl())
+        .category(command.getCategory())
+        .manufacturer(command.getManufacturer())
+        .status(StringUtils.hasText(command.getStatus()) ? command.getStatus() : "ACTIVE") // Default status
+        .createdAt(new Date())
+        .updatedAt(new Date())
+        .build();
 
-        // 3. Enrich and Map
-        Product product = Product.builder()
-                .id(UUID.randomUUID())
-                .name(command.getName())
-                .description(command.getDescription())
-                .price(command.getPrice())
-                .stockQuantity(command.getStockQuantity())
-                .sku(command.getSku())
-                .imageUrl(command.getImageUrl())
-                .category(command.getCategory())
-                .manufacturer(command.getManufacturer())
-                .status(StringUtils.hasText(command.getStatus()) ? command.getStatus() : "ACTIVE") // Default status
-                .createdAt(new Date())
-                .updatedAt(new Date())
-                .build();
+    // 4. Persist
+    Product savedProduct = productRepository.save(product);
 
-        // 4. Persist
-        Product savedProduct = productRepository.save(product);
+    // 5. Publish Event
+    productEventPublisher.publishProductCreatedEvent(savedProduct);
 
-        // 5. Publish Event
-        productEventPublisher.publishProductCreatedEvent(savedProduct);
-
-        return savedProduct;
-    }
+    return savedProduct;
+  }
 }

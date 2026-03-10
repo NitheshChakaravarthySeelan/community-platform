@@ -1,11 +1,10 @@
 package com.community.orders.wallet.interfaces.dto;
 
+import java.math.BigDecimal;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor

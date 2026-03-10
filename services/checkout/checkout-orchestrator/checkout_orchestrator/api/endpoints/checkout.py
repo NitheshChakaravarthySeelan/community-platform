@@ -10,6 +10,7 @@ router = APIRouter()
 @router.post("/checkout")
 async def checkout(
     request: CheckoutRequest,
+    checkout_service: CheckoutService = Depends(get_checkout_service)
 ) -> dict:
     if not is_valid_uuid(request.user_id):
         raise HTTPException(status_code=400, detail="Invalid user_id format.")
@@ -17,11 +18,15 @@ async def checkout(
         raise HTTPException(status_code=400, detail="Invalid cart_id format.")
 
     try:
-        # Dummy response for testing
+        saga_id = await checkout_service.start_checkout_saga(
+            cart_id=request.cart_id,
+            user_id=request.user_id,
+            cart_details=request.cart_details
+        )
         return {
             "success": True,
-            "order_id": "dummy_saga_id",
-            "message": "Checkout function called (dependency removed for testing)"
+            "order_id": saga_id,
+            "message": "Checkout saga initiated successfully."
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

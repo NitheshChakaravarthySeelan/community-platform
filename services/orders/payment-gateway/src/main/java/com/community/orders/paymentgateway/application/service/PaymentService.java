@@ -2,11 +2,13 @@ package com.community.orders.paymentgateway.application.service;
 
 import com.community.orders.paymentgateway.domain.model.PaymentTransaction;
 import com.community.orders.paymentgateway.domain.repository.PaymentTransactionRepository;
-import com.community.orders.paymentgateway.interfaces.dto.PaymentRequest;
 import com.community.orders.paymentgateway.interfaces.dto.PaymentResponse;
+import com.community.platform.shared.proto.payment.ProcessPaymentCommand;
+import com.community.platform.shared.proto.payment.RefundPaymentCommand;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Random;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,34 +18,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final Random random = new Random();
 
     @Transactional
-    public PaymentResponse processPayment(PaymentRequest request) {
-        // Simulate payment processing with deterministic logic
-        // For testing purposes: an amount of 13.00 will simulate a failure.
-        boolean paymentSuccessful = !request.getAmount().equals(new BigDecimal("13.00"));
+    public PaymentResponse processPayment(ProcessPaymentCommand command) {
+        String sagaId = command.getMetadata().getSagaId();
 
+        // Idempotency check
+        Optional<PaymentTransaction> existing = paymentTransactionRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            return mapToResponse(existing.get());
+        }
+
+        BigDecimal amount =
+                BigDecimal.valueOf(command.getAmountCents()).divide(BigDecimal.valueOf(100));
+
+        // Simulate payment processing logic
+        boolean paymentSuccessful = amount.compareTo(new BigDecimal("13.00")) != 0;
         String status = paymentSuccessful ? "SUCCESS" : "FAILED";
         String message =
-                paymentSuccessful
-                        ? "Payment processed successfully."
-                        : "Payment failed due to simulated error: insufficient funds.";
+                paymentSuccessful ? "Payment processed successfully." : "Insufficient funds.";
 
         PaymentTransaction transaction =
                 PaymentTransaction.builder()
-                        .orderId(request.getOrderId())
-                        .amount(request.getAmount())
-                        .currency(request.getCurrency())
-                        .paymentMethod(request.getPaymentMethod())
+                        .sagaId(sagaId)
+                        .orderId(UUID.fromString(command.getOrderId()))
+                        .amount(amount)
+                        .currency(command.getCurrency())
+                        .paymentMethod(command.getPaymentMethod())
                         .status(status)
                         .message(message)
                         .timestamp(Instant.now())
                         .build();
 
         PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
-
         return mapToResponse(savedTransaction);
+    }
+
+    @Transactional
+    public void refundPayment(RefundPaymentCommand command) {
+        // Implementation for refund logic
+        String sagaId = command.getMetadata().getSagaId();
+        // Check if already refunded (idempotency)
+        // ...
     }
 
     private PaymentResponse mapToResponse(PaymentTransaction transaction) {

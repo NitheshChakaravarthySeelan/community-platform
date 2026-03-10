@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package invoice;
+
+option java_package = "com.community.platform.shared.proto.invoice";
+option java_multiple_files = true;
+option go_package = "github.com/community-platform/shared/proto/invoice;invoice";
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Commands ---
+
+message GenerateInvoiceCommand {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string user_id = 3;
+  common.Address billing_address = 4;
+  repeated common.OrderItem items = 5;
+  int64 subtotal_cents = 6;
+  int64 shipping_cents = 7;
+  int64 tax_cents = 8;
+  int64 discount_cents = 9;
+  int64 total_cents = 10;
+  string payment_transaction_id = 11;
+}
+
+// --- Events ---
+
+message InvoiceGeneratedEvent {
+  common.SagaMetadata metadata = 1;
+  string invoice_id = 2;
+  string order_id = 3;
+  string invoice_pdf_url = 4;
+}
+
+message InvoiceGenerationFailedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string reason = 3;
+}

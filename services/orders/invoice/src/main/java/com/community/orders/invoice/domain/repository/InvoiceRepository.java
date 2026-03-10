@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     Optional<Invoice> findByOrderId(UUID orderId);
+
+    Optional<Invoice> findBySagaId(String sagaId);
 }

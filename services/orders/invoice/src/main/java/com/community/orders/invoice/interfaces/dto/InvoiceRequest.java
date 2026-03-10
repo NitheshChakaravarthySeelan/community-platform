@@ -13,18 +13,7 @@ import lombok.NoArgsConstructor;
 public class InvoiceRequest {
     private UUID orderId;
     private UUID userId;
-    private List<InvoiceItemDTO> items; // Assuming InvoiceItemDTO will be defined
+    private List<InvoiceItemDTO> items;
     private BigDecimal totalAmount;
     private String currency; // e.g., "USD", "EUR"
-}
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class InvoiceItemDTO {
-    private UUID productId;
-    private String productName;
-    private int quantity;
-    private BigDecimal unitPrice;
-    private BigDecimal totalPrice;
 }

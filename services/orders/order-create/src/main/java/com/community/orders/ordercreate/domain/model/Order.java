@@ -34,6 +34,9 @@ public class Order {
     // 2. Remove @GeneratedValue - UUIDs will be assigned in the service layer
     private UUID id;
 
+    @Column(unique = true)
+    private String sagaId;
+
     @Column(nullable = false)
     private UUID userId;
 

@@ -1,18 +1,23 @@
 package com.community.orders.ordercreate.kafka;
 
-import com.community.orders.ordercreate.application.command.CreateOrderCommand;
 import com.community.orders.ordercreate.application.dto.OrderDTO;
 import com.community.orders.ordercreate.application.service.OrderService;
-import com.community.platform.shared.kafka.dto.OrderCreatedEvent;
-import com.community.platform.shared.kafka.dto.PaymentProcessedEvent;
-import java.math.BigDecimal;
+import com.community.platform.shared.proto.common.SagaMetadata;
+import com.community.platform.shared.proto.order.CreateOrderCommand;
+import com.community.platform.shared.proto.order.OrderCreatedEvent;
+import com.community.platform.shared.proto.order.OrderCreationFailedEvent;
+import com.google.protobuf.Timestamp;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class KafkaConsumer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -21,71 +26,56 @@ public class KafkaConsumer {
     @Value("${topic.checkout.checkout-events}")
     private String checkoutEventsTopic;
 
-    public KafkaConsumer(KafkaTemplate<String, Object> kafkaTemplate, OrderService orderService) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.orderService = orderService;
-    }
-
-    @KafkaListener(topics = "${topic.checkout.checkout-events}", groupId = "order-create-group")
-    public void consume(PaymentProcessedEvent event) {
-        System.out.println("Consumed PaymentProcessedEvent for order: " + event.getOrderId());
-
-        // Check if the event is a PaymentProcessedEvent
-        // In a multi-handler scenario, this would be more sophisticated (e.g., @KafkaHandler)
-        // but for now, we assume this listener only cares about PaymentProcessedEvent
-        // after refactoring its topic.
-
-        // 1. Map PaymentProcessedEvent to CreateOrderCommand
-        CreateOrderCommand createOrderCommand = mapToCreateOrderCommand(event);
+    @KafkaListener(topics = "checkout.order-command", groupId = "order-create-group")
+    public void consume(CreateOrderCommand command) {
+        log.info("Consumed CreateOrderCommand for saga: {}", command.getMetadata().getSagaId());
 
         try {
-            // 2. Delegate order creation to the OrderService
-            OrderDTO createdOrder = orderService.createOrder(createOrderCommand);
+            OrderDTO createdOrder = orderService.createOrder(command);
 
-            // 3. Produce OrderCreatedEvent
-            OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent();
-            orderCreatedEvent.setOrderId(createdOrder.getId());
-            orderCreatedEvent.setUserId(
-                    createdOrder.getUserId()); // Assuming UserId is UUID in OrderDTO
-            orderCreatedEvent.setTotalAmount(
-                    createdOrder.getTotalCents() != null
-                            ? new BigDecimal(createdOrder.getTotalCents())
-                                    .divide(new BigDecimal(100))
-                            : BigDecimal.ZERO); // Convert cents to BigDecimal
-            orderCreatedEvent.setTimestamp(Instant.now());
+            OrderCreatedEvent event =
+                    OrderCreatedEvent.newBuilder()
+                            .setMetadata(
+                                    SagaMetadata.newBuilder()
+                                            .setSagaId(command.getMetadata().getSagaId())
+                                            .setEventId(java.util.UUID.randomUUID().toString())
+                                            .setTimestamp(
+                                                    Timestamp.newBuilder()
+                                                            .setSeconds(
+                                                                    Instant.now().getEpochSecond())
+                                                            .build())
+                                            .build())
+                            .setOrderId(createdOrder.getId().toString())
+                            .setUserId(createdOrder.getUserId().toString())
+                            .setTotalCents(createdOrder.getTotalCents())
+                            .build();
 
-            kafkaTemplate.send(checkoutEventsTopic, orderCreatedEvent);
-            System.out.println("Produced OrderCreatedEvent for order: " + createdOrder.getId());
+            kafkaTemplate.send(checkoutEventsTopic, event);
+            log.info("Produced OrderCreatedEvent for order: {}", createdOrder.getId());
 
         } catch (Exception e) {
-            // TODO: Implement OrderCreationFailedEvent and send it
-            System.err.println(
-                    "Failed to create order for payment "
-                            + event.getPaymentId()
-                            + ": "
-                            + e.getMessage());
+            log.error(
+                    "Failed to create order for saga {}: {}",
+                    command.getMetadata().getSagaId(),
+                    e.getMessage());
+
+            OrderCreationFailedEvent failedEvent =
+                    OrderCreationFailedEvent.newBuilder()
+                            .setMetadata(
+                                    SagaMetadata.newBuilder()
+                                            .setSagaId(command.getMetadata().getSagaId())
+                                            .setEventId(java.util.UUID.randomUUID().toString())
+                                            .setTimestamp(
+                                                    Timestamp.newBuilder()
+                                                            .setSeconds(
+                                                                    Instant.now().getEpochSecond())
+                                                            .build())
+                                            .build())
+                            .setUserId(command.getUserId())
+                            .setReason(e.getMessage())
+                            .build();
+
+            kafkaTemplate.send(checkoutEventsTopic, failedEvent);
         }
-    }
-
-    private CreateOrderCommand mapToCreateOrderCommand(PaymentProcessedEvent event) {
-        // This mapping will depend on what PaymentProcessedEvent contains and what
-        // CreateOrderCommand expects.
-        // For now, we'll map the common fields. Missing fields will require
-        // a more complex saga involving earlier steps (e.g., cart details from initial command).
-        // This is a simplification to get the happy path working.
-
-        // A real CreateOrderCommand would need more details (items, shipping, billing address,
-        // etc.)
-        // which would typically come from an earlier event (e.g., CheckoutInitiatedEvent)
-        // For now, we'll create a minimal command for the OrderService.
-
-        // Assuming OrderService's CreateOrderCommand can be minimal for this context
-        return CreateOrderCommand.builder()
-                .userId(event.getUserId())
-                .totalCents(
-                        event.getAmount() != null
-                                ? event.getAmount().multiply(new BigDecimal(100)).intValueExact()
-                                : 0) // Convert BigDecimal to cents
-                .build();
     }
 }

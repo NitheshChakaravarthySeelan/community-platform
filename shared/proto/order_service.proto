@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package order;
+
+option java_package = "com.community.platform.shared.proto.order";
+option java_multiple_files = true;
+option go_package = "github.com/community-platform/shared/proto/order;order";
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Commands ---
+
+message CreateOrderCommand {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  common.Address shipping_address = 3;
+  common.Address billing_address = 4;
+  repeated common.OrderItem items = 5;
+  int64 subtotal_cents = 6;
+  int64 shipping_cents = 7;
+  int64 tax_cents = 8;
+  int64 discount_cents = 9;
+  int64 total_cents = 10;
+  string payment_transaction_id = 11;
+}
+
+// --- Events ---
+
+message OrderCreatedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string user_id = 3;
+  int64 total_cents = 4;
+}
+
+message OrderCreationFailedEvent {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  string reason = 3;
+}

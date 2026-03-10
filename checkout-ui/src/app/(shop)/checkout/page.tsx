@@ -125,10 +125,13 @@ export default function CheckoutPage() {
         description: `Your order ${response.order_id || "has been processed"}.`,
         variant: "default",
       });
-      // Clear cart client-side after successful order
-      // We would ideally refetch the cart or have a dedicated cart clearing API
-      // For now, simulate by redirecting
-      // router.push('/order-confirmation/' + response.order_id);
+
+      // Redirect to payment page with order details
+      const params = new URLSearchParams({
+        orderId: response.order_id || "",
+        amount: (cart.totalPriceCents / 100).toString(),
+      });
+      router.push(`/payments?${params.toString()}`);
     } catch (err: any) {
       console.error("Checkout error:", err);
       setCheckoutError(err.message || "Failed to place order.");
