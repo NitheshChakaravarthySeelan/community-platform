@@ -9,5 +9,4 @@ public class RefundApplication {
     public static void main(String[] args) {
         SpringApplication.run(RefundApplication.class, args);
     }
-
 }

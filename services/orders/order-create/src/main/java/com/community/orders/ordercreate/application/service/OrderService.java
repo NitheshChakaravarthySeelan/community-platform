@@ -1,15 +1,18 @@
 package com.community.orders.ordercreate.application.service;
 
-import com.community.orders.ordercreate.application.command.CreateOrderCommand;
 import com.community.orders.ordercreate.application.dto.OrderDTO;
 import com.community.orders.ordercreate.application.dto.OrderItemDTO;
 import com.community.orders.ordercreate.domain.model.Order;
 import com.community.orders.ordercreate.domain.model.Status;
 import com.community.orders.ordercreate.domain.repository.OrderRepository;
+import com.community.platform.shared.proto.common.Address;
+import com.community.platform.shared.proto.order.CreateOrderCommand;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List; // ADD THIS IMPORT
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,52 +22,77 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final ObjectMapper objectMapper; // Inject ObjectMapper for JSON processing
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public OrderDTO createOrder(CreateOrderCommand command) {
-        // Generate a new UUID for the order
-        UUID orderId = UUID.randomUUID();
+        String sagaId = command.getMetadata().getSagaId();
 
-        // Map OrderItemCommand list to JSON string
-        String itemsJson;
-        try {
-            itemsJson = objectMapper.writeValueAsString(command.getItems());
-        } catch (JsonProcessingException e) {
-            // In a real application, you'd handle this error more gracefully
-            throw new RuntimeException("Failed to serialize order items to JSON", e);
+        // Idempotency check
+        Optional<Order> existingOrder = orderRepository.findBySagaId(sagaId);
+        if (existingOrder.isPresent()) {
+            return mapToDTO(existingOrder.get());
         }
 
-        // Map paymentMethodDetails (assuming it's already a JSON string or simple string)
-        String paymentMethodDetailsJson = command.getPaymentMethodDetails();
+        UUID orderId = UUID.randomUUID();
+
+        // Map Protobuf OrderItems to JSON string for persistence
+        String itemsJson;
+        try {
+            List<OrderItemDTO> itemDTOs =
+                    command.getItemsList().stream()
+                            .map(
+                                    item ->
+                                            OrderItemDTO.builder()
+                                                    .productId(UUID.fromString(item.getProductId()))
+                                                    .name(item.getName())
+                                                    .quantity(item.getQuantity())
+                                                    .priceAtTime((int) item.getUnitPriceCents())
+                                                    .build())
+                            .collect(Collectors.toList());
+            itemsJson = objectMapper.writeValueAsString(itemDTOs);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize order items to JSON", e);
+        }
 
         Order order =
                 Order.builder()
                         .id(orderId)
-                        .userId(command.getUserId())
-                        .billingAddress(command.getBillingAddress())
-                        .shippingAddress(command.getShippingAddress())
-                        .items(itemsJson) // Set the JSON string
-                        .subtotalCents(command.getSubtotalCents())
-                        .shippingCents(command.getShippingCents())
-                        .taxCents(command.getTaxCents())
-                        .discountCents(command.getDiscountCents())
-                        .totalCents(command.getTotalCents())
-                        .status(Status.PENDING_PAYMENT) // Initial status
-                        .paymentMethodDetails(paymentMethodDetailsJson) // Set the JSON string
-                        .transactionId(null) // This would be set after payment processing
-                        // createdAt and updatedAt are handled by
-                        // @CreationTimestamp/@UpdateTimestamp
+                        .sagaId(sagaId)
+                        .userId(UUID.fromString(command.getUserId()))
+                        .billingAddress(formatAddress(command.getBillingAddress()))
+                        .shippingAddress(formatAddress(command.getShippingAddress()))
+                        .items(itemsJson)
+                        .subtotalCents((int) command.getSubtotalCents())
+                        .shippingCents((int) command.getShippingCents())
+                        .taxCents((int) command.getTaxCents())
+                        .discountCents((int) command.getDiscountCents())
+                        .totalCents((int) command.getTotalCents())
+                        .status(Status.PROCESSING)
+                        .transactionId(UUID.fromString(command.getPaymentTransactionId()))
                         .build();
 
         Order savedOrder = orderRepository.save(order);
+        return mapToDTO(savedOrder);
+    }
 
-        // Map the saved Order entity back to OrderDTO
+    private String formatAddress(Address address) {
+        return String.format(
+                "%s, %s, %s, %s %s, %s",
+                address.getFullName(),
+                address.getStreetAddress(),
+                address.getCity(),
+                address.getStateProvince(),
+                address.getPostalCode(),
+                address.getCountry());
+    }
+
+    private OrderDTO mapToDTO(Order order) {
         List<OrderItemDTO> orderItemDTOs = null;
         try {
             orderItemDTOs =
                     objectMapper.readValue(
-                            savedOrder.getItems(),
+                            order.getItems(),
                             objectMapper
                                     .getTypeFactory()
                                     .constructCollectionType(List.class, OrderItemDTO.class));
@@ -73,21 +101,20 @@ public class OrderService {
         }
 
         return OrderDTO.builder()
-                .id(savedOrder.getId())
-                .userId(savedOrder.getUserId())
-                .billingAddress(savedOrder.getBillingAddress())
-                .shippingAddress(savedOrder.getShippingAddress())
+                .id(order.getId())
+                .userId(order.getUserId())
+                .billingAddress(order.getBillingAddress())
+                .shippingAddress(order.getShippingAddress())
                 .items(orderItemDTOs)
-                .subtotalCents(savedOrder.getSubtotalCents())
-                .shippingCents(savedOrder.getShippingCents())
-                .taxCents(savedOrder.getTaxCents())
-                .discountCents(savedOrder.getDiscountCents())
-                .totalCents(savedOrder.getTotalCents())
-                .status(savedOrder.getStatus())
-                .paymentMethodDetails(savedOrder.getPaymentMethodDetails())
-                .transactionId(savedOrder.getTransactionId())
-                .createdAt(savedOrder.getCreatedAt())
-                .updatedAt(savedOrder.getUpdatedAt())
+                .subtotalCents(order.getSubtotalCents())
+                .shippingCents(order.getShippingCents())
+                .taxCents(order.getTaxCents())
+                .discountCents(order.getDiscountCents())
+                .totalCents(order.getTotalCents())
+                .status(order.getStatus())
+                .transactionId(order.getTransactionId())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
                 .build();
     }
 }

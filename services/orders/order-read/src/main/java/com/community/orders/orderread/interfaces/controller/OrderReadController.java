@@ -2,12 +2,11 @@ package com.community.orders.orderread.interfaces.controller;
 
 import com.community.orders.orderread.application.service.OrderService;
 import com.community.orders.orderread.interfaces.dto.OrderResponse;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/orders")

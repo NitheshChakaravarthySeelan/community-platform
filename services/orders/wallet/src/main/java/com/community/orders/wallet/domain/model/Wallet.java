@@ -4,13 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Entity
 @Table(name = "wallets")
@@ -19,8 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Wallet {
-    @Id
-    private UUID userId; // User ID is also the Wallet ID
+    @Id private UUID userId; // User ID is also the Wallet ID
 
     @Column(nullable = false)
     private BigDecimal balance;

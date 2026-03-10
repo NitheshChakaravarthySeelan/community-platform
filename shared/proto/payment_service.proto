@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package payment;
+
+option java_package = "com.community.platform.shared.proto.payment";
+option java_multiple_files = true;
+option go_package = "github.com/community-platform/shared/proto/payment;payment";
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Commands ---
+
+message ProcessPaymentCommand {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  string order_id = 3;
+  int64 amount_cents = 4;
+  string currency = 5;
+  string payment_method = 6;
+  string payment_method_details = 7; // JSON or encrypted card details
+}
+
+message RefundPaymentCommand {
+  common.SagaMetadata metadata = 1;
+  string transaction_id = 2;
+  int64 amount_cents = 3;
+  string reason = 4;
+}
+
+// --- Events ---
+
+message PaymentProcessedEvent {
+  common.SagaMetadata metadata = 1;
+  string transaction_id = 2;
+  string order_id = 3;
+  string user_id = 4;
+  int64 amount_cents = 5;
+  string status = 6;
+}
+
+message PaymentFailedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string user_id = 3;
+  string reason = 4;
+}
+
+message PaymentRefundedEvent {
+  common.SagaMetadata metadata = 1;
+  string refund_transaction_id = 2;
+  string original_transaction_id = 3;
+  int64 amount_cents = 4;
+}

@@ -1,17 +1,16 @@
 package com.community.orders.orderread.domain.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -20,9 +19,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Order {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID orderId;
+    @Id private UUID orderId;
+
+    @Column(unique = true)
+    private String sagaId;
+
+    private UUID transactionId;
 
     @Column(nullable = false)
     private UUID userId;

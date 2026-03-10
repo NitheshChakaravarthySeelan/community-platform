@@ -2,73 +2,70 @@ package com.community.orders.refund.application.service;
 
 import com.community.orders.refund.domain.model.Refund;
 import com.community.orders.refund.domain.repository.RefundRepository;
-import com.community.orders.refund.interfaces.dto.RefundRequest;
 import com.community.orders.refund.interfaces.dto.RefundResponse;
-import org.springframework.kafka.core.KafkaTemplate;
+import com.community.platform.shared.proto.payment.RefundPaymentCommand;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.Random;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class RefundService {
 
-  private final RefundRepository refundRepository;
-  private final KafkaTemplate<String, RefundResponse> kafkaTemplate;
-  private final Random random = new Random();
+    private final RefundRepository refundRepository;
 
-  @Transactional
-  public RefundResponse processRefund(RefundRequest request) {
-    // Simulate refund processing
-    boolean refundSuccessful = random.nextBoolean(); // Simulate success/failure randomly
+    @Transactional
+    public RefundResponse processRefund(RefundPaymentCommand command) {
+        String sagaId = command.getMetadata().getSagaId();
 
-    String status = refundSuccessful ? "COMPLETED" : "FAILED";
-    UUID transactionId = refundSuccessful ? UUID.randomUUID() : null; // Link to payment transaction if successful
+        // Idempotency check
+        Optional<Refund> existing = refundRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            return mapToResponse(existing.get());
+        }
 
-    Refund refund = Refund.builder()
-        .orderId(request.getOrderId())
-        .userId(request.getUserId())
-        .amount(request.getAmount())
-        .reason(request.getReason())
-        .status(status)
-        .refundDate(Instant.now())
-        .transactionId(transactionId)
-        .build();
+        Refund refund =
+                Refund.builder()
+                        .sagaId(sagaId)
+                        .transactionId(UUID.fromString(command.getTransactionId()))
+                        .amount(
+                                BigDecimal.valueOf(command.getAmountCents())
+                                        .divide(BigDecimal.valueOf(100)))
+                        .reason(command.getReason())
+                        .status("COMPLETED")
+                        .refundDate(Instant.now())
+                        // In a real scenario, we might need orderId and userId in the command too
+                        .build();
 
-    Refund savedRefund = refundRepository.save(refund);
-
-    // Create the event object
-    RefundResponse refundResponse = mapToResponse(savedRefund);
-
-    if ("COMPLETED".equals(refundResponse.getStatus())) {
-      kafkaTemplate.send("refund.event.completed", refundResponse);
-      System.out.println("Published RefundCompleted event for Order ID: " + refundResponse.getOrderId());
-    } else {
-      kafkaTemplate.send("refund.event.failed", refundResponse);
-      System.out.println("published RefundFailed event for Order ID: " + refundResponse.getOrderId());
+        Refund savedRefund = refundRepository.save(refund);
+        return mapToResponse(savedRefund);
     }
-  }
 
-  @Transactional(readOnly = true)
-  public RefundResponse getRefundByOrderId(UUID orderId) {
-    Refund refund = refundRepository.findByOrderId(orderId)
-        .orElseThrow(() -> new IllegalArgumentException("Refund not found for order ID: " + orderId));
-    return mapToResponse(refund);
-  }
+    @Transactional(readOnly = true)
+    public RefundResponse getRefundByOrderId(UUID orderId) {
+        Refund refund =
+                refundRepository
+                        .findByOrderId(orderId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Refund not found for order ID: " + orderId));
+        return mapToResponse(refund);
+    }
 
-  private RefundResponse mapToResponse(Refund refund) {
-    return new RefundResponse(
-        refund.getRefundId(),
-        refund.getOrderId(),
-        refund.getUserId(),
-        refund.getAmount(),
-        refund.getStatus(),
-        refund.getReason(),
-        refund.getRefundDate(),
-        refund.getTransactionId());
-  }
+    private RefundResponse mapToResponse(Refund refund) {
+        return new RefundResponse(
+                refund.getRefundId(),
+                refund.getOrderId(),
+                refund.getUserId(),
+                refund.getAmount(),
+                refund.getStatus(),
+                refund.getReason(),
+                refund.getRefundDate(),
+                refund.getTransactionId());
+    }
 }
