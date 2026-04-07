@@ -2,27 +2,26 @@ use std::env;
 use std::time::Duration;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::message::Message;
+use rdkafka::message::{Message, Headers, BorrowedMessage};
 use rdkafka::ClientConfig;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool; // Keep PgPool for run_kafka_consumer
-use uuid::Uuid; // Added Uuid import
+use sqlx::PgPool; 
+use uuid::Uuid; 
+use prost::Message as ProstMessage;
 
-use crate::events::ProductCreatedEvent; // Import ProductCreatedEvent
+use crate::catalog_events::{ProductCreatedEvent as ProtoProductCreatedEvent, ProductUpdatedEvent as ProtoProductUpdatedEvent};
 
 // --- Event Structs (Matching Java DTOs for JSON structure) ---
 #[derive(Debug, Deserialize, Serialize)]
 struct CheckoutInitiatedEvent {
-    order_id: Uuid, // Changed to Uuid
-    user_id: Uuid,   // Changed to Uuid
+    order_id: Uuid, 
+    user_id: Uuid,   
     items: Vec<InventoryItem>,
-    // total_amount: f64, // If needed from event
-    r#type: String, // Event type string, e.g., "CheckoutInitiatedEvent"
+    r#type: String, 
 }
 
-use sqlx::FromRow; // Add this line
+use sqlx::FromRow; 
 
-// Renamed for clarity and consistency with shared DTO
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 struct InventoryItem {
     product_id: Uuid,
@@ -33,8 +32,8 @@ struct InventoryItem {
 struct InventoryReservedEvent {
     order_id: String,
     user_id: String,
-    timestamp: String, // Instant from Java
-    r#type: String, // Event type string
+    timestamp: String, 
+    r#type: String, 
 }
 
 #[derive(Debug, Serialize)]
@@ -42,47 +41,96 @@ struct InventoryReservationFailedEvent {
     order_id: String,
     user_id: String,
     reason: String,
-    timestamp: String, // Instant from Java
-    r#type: String, // Event type string
+    timestamp: String, 
+    r#type: String, 
 }
 // --- End Event Structs ---
 
 
-async fn process_message<DB>(
-    msg_payload: &[u8],
+async fn process_message<'a, DB>(
+    msg: &BorrowedMessage<'a>,
     producer: &FutureProducer,
     pool: &sqlx::Pool<DB>,
     _product_events_topic: &str,
     checkout_events_topic: &str,
 ) where
     DB: sqlx::Database + Send + Sync,
-    <DB as sqlx::Database>::Connection: sqlx::Connection + Send + Unpin, // Connection itself needs Send + Unpin for transaction
+    <DB as sqlx::Database>::Connection: sqlx::Connection + Send + Unpin, 
     <DB as sqlx::Database>::TransactionManager: sqlx::TransactionManager<Database = DB>,
 
-    // Explicitly declare that Pool and &mut Connection are Executors
     for<'c> &'c sqlx::Pool<DB>: sqlx::Executor<'c, Database = DB>,
     for<'c> &'c mut <DB as sqlx::Database>::Connection: sqlx::Executor<'c, Database = DB>,
 
-    // Bounds for types used in query parameters (.bind())
-    for<'a> i32: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
-    for<'a> Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
-    for<'a> time::OffsetDateTime: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
+    for<'a2> i32: sqlx::Type<DB> + sqlx::Encode<'a2, DB> + sqlx::Decode<'a2, DB>,
+    for<'a2> Uuid: sqlx::Type<DB> + sqlx::Encode<'a2, DB> + sqlx::Decode<'a2, DB>,
+    for<'a2> time::OffsetDateTime: sqlx::Type<DB> + sqlx::Encode<'a2, DB> + sqlx::Decode<'a2, DB>,
 
-    // Corrected IntoArguments bound for all types passed to .bind()
-    for<'a> <DB as sqlx::database::HasArguments<'a>>::Arguments: sqlx::IntoArguments<'a, DB>,
+    for<'a2> <DB as sqlx::database::HasArguments<'a2>>::Arguments: sqlx::IntoArguments<'a2, DB>,
 
+    (i32,): for<'a2> sqlx::FromRow<'a2, <DB as sqlx::Database>::Row>,
+    InventoryItem: for<'a2> sqlx::FromRow<'a2, <DB as sqlx::Database>::Row>,
 
-    // Bounds for types returned by queries (FromRow for tuples and structs)
-    (i32,): for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
-    InventoryItem: for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
-
-    // Ensure the database's Row type correctly implements necessary traits
     <DB as sqlx::Database>::Row: sqlx::Row + Unpin,
 {
+    let msg_payload = match msg.payload() {
+        None => return,
+        Some(p) => p,
+    };
+
+    let event_type_header = msg.headers().and_then(|h| {
+        for i in 0..h.count() {
+            let header = h.get(i);
+            if header.key == "event_type" {
+                return header.value.and_then(|v| std::str::from_utf8(v).ok());
+            }
+        }
+        None
+    });
+
+    if let Some(et) = event_type_header {
+        match et {
+            "ProductCreated" => {
+                if let Ok(event) = ProtoProductCreatedEvent::decode(msg_payload) {
+                    let product_id = match Uuid::parse_str(&event.product_id) {
+                        Ok(id) => id,
+                        Err(_) => return,
+                    };
+                    if let Err(e) = sqlx::query(
+                        r#"
+                        INSERT INTO inventory_items (product_id, quantity)
+                        VALUES ($1, $2)
+                        ON CONFLICT (product_id) DO UPDATE SET
+                            quantity = inventory_items.quantity + EXCLUDED.quantity,
+                            updated_at = NOW()
+                        "#
+                    )
+                    .bind(product_id)
+                    .bind(event.quantity)
+                    .execute(pool)
+                    .await
+                    {
+                        eprintln!("Failed to insert/update inventory for ProductCreated (Proto): {}", e);
+                    } else {
+                        println!("Processed ProductCreated (Proto) for Product ID: {}", event.product_id);
+                    }
+                    return;
+                }
+            },
+            "ProductUpdated" => {
+                if let Ok(event) = ProtoProductUpdatedEvent::decode(msg_payload) {
+                    println!("Received ProductUpdated (Proto) for ID: {}, ignoring for now in inventory-write", event.product_id);
+                }
+                return;
+            },
+            _ => {}
+        }
+    }
+
+    // Fallback to JSON logic
     let raw_event: serde_json::Value = match serde_json::from_slice(msg_payload) {
         Ok(val) => val,
         Err(e) => {
-            eprintln!("Failed to deserialize raw message: {}", e);
+            eprintln!("Failed to deserialize raw message as JSON: {}", e);
             return;
         }
     };
@@ -91,7 +139,7 @@ async fn process_message<DB>(
 
     match event_type {
         "ProductCreatedEvent" => {
-            let event: ProductCreatedEvent = match serde_json::from_value(raw_event.clone()) { // Clone raw_event
+            let event: ProtoProductCreatedEvent = match serde_json::from_value(raw_event.clone()) { // Clone raw_event
                 Ok(cmd) => cmd,
                 Err(e) => {
                     eprintln!("Failed to deserialize ProductCreatedEvent: {}", e);
@@ -99,6 +147,11 @@ async fn process_message<DB>(
                 }
             };
             
+            let product_id = match Uuid::parse_str(&event.product_id) {
+                Ok(id) => id,
+                Err(_) => return,
+            };
+
             // Insert or update inventory for new product
             if let Err(e) = sqlx::query(
                 r#"
@@ -109,8 +162,8 @@ async fn process_message<DB>(
                     updated_at = NOW()
                 "#
             )
-            .bind(event.product_id.clone())
-            .bind(event.initial_quantity)
+            .bind(product_id)
+            .bind(event.quantity)
             .execute(pool)
             .await
             {
@@ -283,15 +336,15 @@ pub async fn run_kafka_consumer(
     loop {
         match consumer.recv().await {
             Ok(msg) => {
-                let payload = msg.payload().unwrap_or_default();
-                process_message::<sqlx::Postgres>(payload, &producer, &pool, product_events_topic, checkout_events_topic).await;
+                process_message::<sqlx::Postgres>(&msg, &producer, &pool, product_events_topic, checkout_events_topic).await;
             }
             Err(e) => {
                 eprintln!("Kafka error: {}", e);
             }
         }
     }
-}#[cfg(test)]
+    }
+#[cfg(test)]
 mod tests {
     use super::*;
     use rdkafka::ClientConfig; // Import ClientConfig

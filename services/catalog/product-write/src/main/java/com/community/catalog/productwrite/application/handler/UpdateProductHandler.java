@@ -3,6 +3,7 @@ package com.community.catalog.productwrite.application.handler;
 import com.community.catalog.productwrite.application.command.UpdateProductCommand;
 import com.community.catalog.productwrite.application.error.ForbiddenException;
 import com.community.catalog.productwrite.application.error.ProductNotFoundException;
+import com.community.catalog.productwrite.application.event.ProductEventPublisher;
 import com.community.catalog.productwrite.domain.model.Product;
 import com.community.catalog.productwrite.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class UpdateProductHandler {
 
     private final ProductRepository productRepository;
+    private final ProductEventPublisher productEventPublisher;
     private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "PRODUCT_MANAGER");
 
     @Transactional
@@ -45,7 +47,7 @@ public class UpdateProductHandler {
             product.setDescription(command.getDescription());
         }
         if (command.getPrice() != null) {
-            product.setPrice(command.getPrice());
+            product.setPrice(command.getPrice().doubleValue());
         }
         if (command.getStockQuantity() != null) {
             product.setStockQuantity(command.getStockQuantity());
@@ -66,6 +68,10 @@ public class UpdateProductHandler {
         product.setUpdatedAt(new Date());
 
         // 4. Persist
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+        // 5. Publish Event
+        productEventPublisher.publishProductUpdatedEvent(savedProduct);
+        return savedProduct;
     }
 }

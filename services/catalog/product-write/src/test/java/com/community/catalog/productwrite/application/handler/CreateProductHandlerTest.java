@@ -57,7 +57,7 @@ class CreateProductHandlerTest {
     @Test
     void testHandle_WhenUserIsNotAuthorized_ShouldThrowForbiddenException() {
         // Arrange
-        CreateProductCommand command = new CreateProductCommand("New Gadget", "desc", BigDecimal.ONE, 1, "SKU", null, null, null, null, "user-123", List.of("USER"));
+        CreateProductCommand command = new CreateProductCommand("New Gadget", "desc", BigDecimal.ONE, 1, "SKU", null, null, null, null, "user-123", List.of("GUEST"));
 
         // Act & Assert
         assertThrows(ForbiddenException.class, () -> {
@@ -86,7 +86,7 @@ class CreateProductHandlerTest {
     @Test
     void testHandle_WhenStatusCommandIsEmpty_ShouldDefaultToActive() {
         // Arrange
-        CreateProductCommand command = new CreateProductCommand("Default Status Gadget", "desc", BigDecimal.TEN, 10, "DEFAULT-SKU", null, null, null, "", "user-456", List.of("PRODUCT_MANAGER"));
+        CreateProductCommand command = new CreateProductCommand("Default Status Gadget", "desc", BigDecimal.TEN, 10, "DEFAULT-SKU", null, null, null, "", "user-456", List.of("ADMIN"));
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
         when(productRepository.findBySku("DEFAULT-SKU")).thenReturn(Optional.empty());

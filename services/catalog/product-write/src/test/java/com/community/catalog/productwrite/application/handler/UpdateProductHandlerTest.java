@@ -3,6 +3,7 @@ package com.community.catalog.productwrite.application.handler;
 import com.community.catalog.productwrite.application.command.UpdateProductCommand;
 import com.community.catalog.productwrite.application.error.ForbiddenException;
 import com.community.catalog.productwrite.application.error.ProductNotFoundException;
+import com.community.catalog.productwrite.application.event.ProductEventPublisher;
 import com.community.catalog.productwrite.domain.model.Product;
 import com.community.catalog.productwrite.domain.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,9 @@ class UpdateProductHandlerTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private ProductEventPublisher productEventPublisher;
 
     @InjectMocks
     private UpdateProductHandler handler;
@@ -48,9 +52,10 @@ class UpdateProductHandlerTest {
         // Assert
         assertNotNull(updatedProduct);
         assertEquals("Updated Name", updatedProduct.getName());
-        assertEquals(new BigDecimal("129.99"), updatedProduct.getPrice());
+        assertEquals(129.99, updatedProduct.getPrice());
         verify(productRepository, times(1)).findById(productId);
         verify(productRepository, times(1)).save(any(Product.class));
+        verify(productEventPublisher, times(1)).publishProductUpdatedEvent(any(Product.class));
     }
 
     @Test

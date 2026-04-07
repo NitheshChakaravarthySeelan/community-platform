@@ -106,6 +106,25 @@ This document serves as a persistent technical reference for all services within
 - **Communication**: gRPC and HTTP/REST.
 - **Persistence**: PostgreSQL.
 
+## Contract & Serialization Audit (Protobuf vs. Custom)
+
+| Service                   | gRPC Strategy       | Kafka Strategy          | Serialization      |
+| :------------------------ | :------------------ | :---------------------- | :----------------- |
+| **gateway-bff**           | **Shared Protobuf** | **Custom TS Interface** | Mixed (Proto/JSON) |
+| **checkout-orchestrator** | **Generated PB2**   | **Custom Python Dict**  | Mixed (Proto/JSON) |
+| **product-write**         | N/A                 | **Custom Java POJO**    | **JSON**           |
+| **product-read**          | **Shared Protobuf** | N/A                     | **Protobuf**       |
+| **inventory-write**       | **Tonic/Prost**     | **Custom Rust Struct**  | Mixed (Proto/JSON) |
+| **search-index**          | N/A                 | **Custom Rust Struct**  | **JSON**           |
+
+### **The "Contract Gap" Analysis**
+
+A critical inconsistency exists across the platform: **gRPC is standardized on Protobuf, while Kafka is fragmented across custom JSON implementations.**
+
+1.  **Risk**: If `product-write` (Java) updates a field in its custom `ProductUpdatedEvent` POJO, the `search-index` (Rust) or `checkout-orchestrator` (Python) will fail to deserialize the message silently or crash, as they lack a shared schema.
+2.  **Performance**: JSON serialization/deserialization is significantly slower and produces larger payloads than Protobuf's binary format.
+3.  **Recommendation**: All Kafka events should be migrated to use the `shared/proto/*.proto` definitions to ensure a single, language-agnostic source of truth.
+
 ---
 
 _(End of Detailed Service Map)_
