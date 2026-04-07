@@ -45,7 +45,7 @@ public class CreateProductHandler {
         .id(UUID.randomUUID())
         .name(command.getName())
         .description(command.getDescription())
-        .price(command.getPrice())
+        .price(command.getPrice().doubleValue())
         .stockQuantity(command.getStockQuantity())
         .sku(command.getSku())
         .imageUrl(command.getImageUrl())

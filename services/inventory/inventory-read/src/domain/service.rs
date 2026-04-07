@@ -17,15 +17,14 @@ impl InventoryService {
     }
 
     pub async fn get_inventory_by_product_id(&self, product_id: Uuid) -> Result<Option<Inventory>, Error> {
-        let inventory = sqlx::query_as!(
-            Inventory,
+        let inventory = sqlx::query_as::<_, Inventory>(
             r#"
-            SELECT id, product_id as "product_id!: Uuid", quantity, created_at, updated_at
+            SELECT id, product_id, quantity, created_at, updated_at
             FROM inventory_items
-            WHERE product_id = $1::UUID
-            "#,
-            product_id
+            WHERE product_id = $1
+            "#
         )
+        .bind(product_id)
         .fetch_optional(&self.pool)
         .await?;
 

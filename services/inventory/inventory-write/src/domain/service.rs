@@ -19,20 +19,19 @@ impl InventoryService {
     pub async fn update_inventory(&self, product_id: Uuid, request: UpdateStockRequest) -> Result<InventoryItem, Error> {
         let current_time = time::OffsetDateTime::now_utc();
 
-        let inventory = sqlx::query_as!(
-            InventoryItem,
+        let inventory = sqlx::query_as::<_, InventoryItem>(
             r#"
             INSERT INTO inventory_items (product_id, quantity, created_at, updated_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (product_id) DO UPDATE
             SET quantity = inventory_items.quantity + $2, updated_at = $4
             RETURNING id, product_id, quantity, created_at, updated_at
-            "#,
-            product_id,
-            request.quantity,
-            current_time,
-            current_time
+            "#
         )
+        .bind(product_id)
+        .bind(request.quantity)
+        .bind(current_time)
+        .bind(current_time)
         .fetch_one(&self.pool)
         .await?;
 
