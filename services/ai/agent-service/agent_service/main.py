@@ -1,17 +1,24 @@
 import asyncio
 import grpc
 from concurrent import futures
+import uuid
+from typing import TypedDict, List, Dict, Any, Literal, Annotated
+import operator
 
 # Import the generated gRPC files
 import agent_pb2
 import agent_pb2_grpc
+from google.protobuf import struct_pb2
 
-# Import LangGraph and other necessary libraries
-from typing import TypedDict, List, Dict, Any
-from fastmcp import FastMCP
+# LangChain/LangGraph Modern Imports
 from langchain_google_genai import ChatGoogleGenerativeAI
-
-import uuid
+from langchain_mcp_adapters.tools import to_langchain_tools
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage, ToolMessage, BaseMessage
+from langgraph.graph import StateGraph, END
+from langgraph.types import Command
+from fastmcp import FastMCP
+from pydantic import BaseModel, Field
 
 # Helper function to validate UUID strings
 def is_valid_uuid(uuid_string: str) -> bool:
@@ -21,363 +28,164 @@ def is_valid_uuid(uuid_string: str) -> bool:
     except ValueError:
         return False
 
+def python_to_protobuf_value(data: Any) -> struct_pb2.Value:
+    """Converts a Python object to a google.protobuf.Value."""
+    if data is None:
+        return struct_pb2.Value(null_value=struct_pb2.NULL_VALUE)
+    elif isinstance(data, bool):
+        return struct_pb2.Value(bool_value=data)
+    elif isinstance(data, (int, float)):
+        return struct_pb2.Value(number_value=float(data))
+    elif isinstance(data, str):
+        return struct_pb2.Value(string_value=data)
+    elif isinstance(data, list):
+        return struct_pb2.Value(list_value=struct_pb2.ListValue(values=[python_to_protobuf_value(v) for v in data]))
+    elif isinstance(data, dict):
+        return struct_pb2.Value(struct_value=struct_pb2.Struct(fields={k: python_to_protobuf_value(v) for k, v in data.items()}))
+    else:
+        return struct_pb2.Value(string_value=str(data))
+
 # Client Imports
 from agent_service.clients.product_lookup_client import product_lookup_client
 from agent_service.clients.product_read_client import product_read_client
 from agent_service.clients.cart_crud_client import cart_client
+from agent_service.clients.checkout_client import checkout_client
 
+# --- State Definition ---
 class AgentState(TypedDict):
-    user_query: str
-    messages: List[Dict[str, Any]]
-    cart: Dict[str, Any]
-    tool_results: Dict[str, Any]
+    messages: Annotated[List[BaseMessage], operator.add]
+    user_id: str
+    next_step: str
 
+# --- Tools with Dynamic User Context ---
 mcp = FastMCP(name="ShoppingAgent")
 
 @mcp.tool
 async def search_product(product_name: str) -> List[Dict[str, Any]]:
-    """
-    Searches for a product by name.
-
-    Args:
-        product_name: The name of the product to search for.
-
-    Returns:
-        A list of products that match the name.
-    """
-    print(f"Searching for product: {product_name}")
-    results = await product_read_client.search_product(product_name)
-    print(f"Found {len(results)} products.")
-    return results
-
-@mcp.tool
-async def add_to_cart(product_id: str, quantity: int) -> Dict[str, Any]:
-    """
-    Adds a product to the shopping cart.
-
-    Args:
-        product_id: The ID of the product to add.
-        quantity: The number of items to add.
-
-    Returns:
-        The updated state of the shopping cart.
-    """
-    if not is_valid_uuid(product_id):
-        return {"error": f"Invalid product ID format: {product_id}"}
-    
-    # TODO: Get user_id from agent context
-    user_id = "test-user-123"
-    if not is_valid_uuid(user_id):
-        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
-    
-    print(f"Adding {quantity} of product {product_id} to the cart.")
-    updated_cart = await cart_client.add_item_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
-    return updated_cart
-
-@mcp.tool
-async def checkout() -> Dict[str, Any]:
-    """
-    Initiates the checkout process.
-
-    Returns:
-        A confirmation of the checkout process.
-    """
-    print("Initiating a checkout")
-    try:
-        # TODO: Replace with actual user_id from agent context
-        user_id = "test-user-123"
-        checkout_id = await checkout_client.initiate_checkout(user_id = user_id)
-        print(f"Checkout initiated with ID: {checkout_id}")
-        return {
-            "status": "initiated",
-            "checkout_id": {checkout_id},
-            "message": f"Checkout process started Track with ID: {checkout_id}"
-        }
-    except Exception as e:
-        print(f"Checkout initiation failed: {e}")
-        return {
-            "status": "failed",
-            "error": str(e)
-        }
+    """Searches for a product by name."""
+    return await product_read_client.search_products(product_name)
 
 @mcp.tool
 async def get_product_details(product_id: str) -> Dict[str, Any]:
-    """
-    Gets the details of a specific product.
-
-    Args:
-        product_id: The ID of the product.
-
-    Returns:
-        The details of the product.
-    """
-    if not is_valid_uuid(product_id):
-        return {"error": f"Invalid product ID format: {product_id}"}
-    
-    print(f"Getting details for product {product_id}")
-
-    details = await product_lookup_client.get_product_by_id(product_id)
-    if details:
-        print(f"Found product details: {details}")
-        return details
-    else:
-        print(f"No details found for product {product_id}")
-        return None
-
+    """Gets details of a product by ID."""
+    if not is_valid_uuid(product_id): return {"error": "Invalid ID"}
+    return await product_lookup_client.get_product_by_id(product_id)
 
 @mcp.tool
-async def update_cart(product_id: str, quantity: int) -> Dict[str, Any]:
-    """
-    Updates the quantity of a product in the shopping cart.
-
-    Args:
-        product_id: The ID of the product to update.
-        quantity: The new quantity of the product.
-
-    Returns:
-        The updated state of the shopping cart.
-    """
-    if not is_valid_uuid(product_id):
-        return {"error": f"Invalid product ID format: {product_id}"}
-    
-    # TODO: Get user_id from agent context
-    user_id = "test-user-123"
-    if not is_valid_uuid(user_id):
-        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
-    
-    print(f"Updating quantity of product {product_id} to {quantity}.")
-    updated_cart = await cart_client.update_item_quantity(user_id=user_id, product_id=product_id, quantity=quantity)
-    return updated_cart
+async def add_to_cart(product_id: str, quantity: int, user_id: str) -> Dict[str, Any]:
+    """Adds a product to the user's cart."""
+    if not is_valid_uuid(product_id): return {"error": "Invalid ID"}
+    return await cart_client.add_item_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
 
 @mcp.tool
-async def remove_from_cart(product_id: str) -> Dict[str, Any]:
-    """
-    Removes a product from the shopping cart.
-
-    Args:
-        product_id: The ID of the product to remove.
-
-    Returns:
-        The updated state of the shopping cart.
-    """
-    if not is_valid_uuid(product_id):
-        return {"error": f"Invalid product ID format: {product_id}"}
-    
-    # TODO: Get user_id from agent context
-    user_id = "test-user-123"
-    if not is_valid_uuid(user_id):
-        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
-    
-    print(f"Removing product {product_id} from the cart.")
-    updated_cart = await cart_client.remove_item_from_cart(user_id=user_id, product_id=product_id)
-    return updated_cart
+async def view_cart(user_id: str) -> Dict[str, Any]:
+    """Views the user's cart."""
+    return await cart_client.get_cart(user_id=user_id)
 
 @mcp.tool
-async def view_cart() -> Dict[str, Any]:
-    """
-    Views the current state of the shopping cart.
+async def checkout(user_id: str) -> Dict[str, Any]:
+    """Initiates checkout for the user."""
+    checkout_id = await checkout_client.initiate_checkout(user_id=user_id)
+    return {"status": "initiated", "checkout_id": checkout_id}
 
-    Returns:
-        The current state of the shopping cart.
-    """
-    print("Viewing cart.")
-    # TODO: Get user_id from agent context
-    user_id = "test-user-123"
-    if not is_valid_uuid(user_id):
-        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
-    
-    cart = await cart_client.get_cart(user_id=user_id)
-    return cart
+# --- Multi-Agent Setup ---
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
 
-# Initialize the model
-# TODO: Get the API key from environment variables
-llm = ChatGoogleGenerativeAI(model="gemini-pro")
+# Workers
+search_agent = create_react_agent(llm, [search_product, get_product_details])
+cart_agent = create_react_agent(llm, [add_to_cart, view_cart, checkout])
 
-from langchain_core.pydantic_v1 import create_model, Field
-from langchain.tools import tool
+# Supervisor Router
+class Router(BaseModel):
+    """Decide which specialist to delegate to."""
+    next_agent: Literal["search_specialist", "cart_specialist", "FINISH"]
+    instructions: str = Field(description="Instructions for the agent.")
 
-def convert_fastmcp_to_langchain_tools(mcp: FastMCP) -> List[Any]:
-    """Converts fastmcp tools to a format that LangChain can understand."""
-    langchain_tools = []
-    # mcp.schema is not available, so we will manually define the tools for now
-    # This is a placeholder until fastmcp provides a schema
-
-    # search_product
-    search_product_model = create_model("search_product", product_name=(str, Field(..., description="The name of the product to search for.")))
-    @tool(args_schema=search_product_model)
-    def search_product_tool(**kwargs):
-        """Searches for a product by name."""
-        return search_product(**kwargs)
-    langchain_tools.append(search_product_tool)
-
-    # add_to_cart
-    add_to_cart_model = create_model("add_to_cart", product_id=(str, Field(..., description="The ID of the product to add.")), quantity=(int, Field(..., description="The number of items to add.")))
-    @tool(args_schema=add_to_cart_model)
-    def add_to_cart_tool(**kwargs):
-        """Adds a product to the shopping cart."""
-        return add_to_cart(**kwargs)
-    langchain_tools.append(add_to_cart_tool)
-
-    # checkout
-    @tool
-    def checkout_tool(**kwargs):
-        """Initiates the checkout process."""
-        return checkout(**kwargs)
-    langchain_tools.append(checkout_tool)
-
-    # get_product_details
-    get_product_details_model = create_model("get_product_details", product_id=(str, Field(..., description="The ID of the product.")))
-    @tool(args_schema=get_product_details_model)
-    def get_product_details_tool(**kwargs):
-        """Gets the details of a specific product."""
-        return get_product_details(**kwargs)
-    langchain_tools.append(get_product_details_tool)
-
-    # update_cart
-    update_cart_model = create_model("update_cart", product_id=(str, Field(..., description="The ID of the product to update.")), quantity=(int, Field(..., description="The new quantity of the product.")))
-    @tool(args_schema=update_cart_model)
-    def update_cart_tool(**kwargs):
-        """Updates the quantity of a product in the shopping cart."""
-        return update_cart(**kwargs)
-    langchain_tools.append(update_cart_tool)
-
-    # remove_from_cart
-    remove_from_cart_model = create_model("remove_from_cart", product_id=(str, Field(..., description="The ID of the product to remove.")))
-    @tool(args_schema=remove_from_cart_model)
-    def remove_from_cart_tool(**kwargs):
-        """Removes a product from the shopping cart."""
-        return remove_from_cart(**kwargs)
-    langchain_tools.append(remove_from_cart_tool)
-
-    # view_cart
-    @tool
-    def view_cart_tool(**kwargs):
-        """Views the current state of the shopping cart."""
-        return view_cart(**kwargs)
-    langchain_tools.append(view_cart_tool)
-
-    return langchain_tools
-
-
-def agent(state: AgentState):
-    """
-    Invokes the agent to generate a response based on the current state.
-    """
+def supervisor_node(state: AgentState):
     messages = state["messages"]
-    tools = convert_fastmcp_to_langchain_tools(mcp)
-    response = llm.invoke(messages, tools=tools)
-    return {"messages": [response]}
+    # We force the supervisor to decide the next step
+    router_llm = llm.with_structured_output(Router)
+    decision = router_llm.invoke([
+        HumanMessage(content=f"System Context: User ID is {state['user_id']}. Route the request to the right specialist."),
+        *messages
+    ])
+    
+    if decision.next_agent == "FINISH":
+        return Command(goto=END)
+    
+    return Command(
+        goto=decision.next_agent,
+        update={"messages": [HumanMessage(content=decision.instructions, name="supervisor")]}
+    )
 
-from langgraph.prebuilt import ToolExecutor
+# --- Graph Construction ---
+builder = StateGraph(AgentState)
+builder.add_node("supervisor", supervisor_node)
+builder.add_node("search_specialist", search_agent)
+builder.add_node("cart_specialist", cart_agent)
 
-# Create the tool executor
-tools = convert_fastmcp_to_langchain_tools(mcp)
-tool_executor = ToolExecutor(tools)
+builder.set_entry_point("supervisor")
+builder.add_edge("search_specialist", "supervisor")
+builder.add_edge("cart_specialist", "supervisor")
 
-def tool_executor_node(state: AgentState):
-    """
-    Executes the tools that the agent has decided to use.
-    """
-    last_message = state["messages"][-1]
-    tool_call = last_message.tool_calls[0]
-    # The ToolExecutor will automatically call the correct tool
-    output = tool_executor.invoke(tool_call)
-    return {"tool_results": output}
+app = builder.compile()
 
-from langgraph.graph import StatefulGraph, END
-
-# 1. Instantiate the graph
-workflow = StatefulGraph(AgentState)
-
-# 2. Add the nodes
-workflow.add_node("agent", agent)
-workflow.add_node("tool_executor", tool_executor_node)
-
-# 3. Define the edges
-workflow.set_entry_point("agent")
-
-# This function decides what to do after the agent has been called
-def should_continue(state: AgentState):
-    last_message = state["messages"][-1]
-    if last_message.tool_calls:
-        return "tool_executor"
-    else:
-        return END
-
-workflow.add_conditional_edges(
-    "agent",
-    should_continue,
-    {"tool_executor": "tool_executor", END: END}
-)
-
-workflow.add_edge("tool_executor", "agent")
-
-# 4. Compile the graph
-app = workflow.compile()
-
-
+# --- gRPC Servicer ---
 class AgentService(agent_pb2_grpc.AgentServiceServicer):
     async def ExecuteWorkflow(self, request, context):
-        initial_state = AgentState(
-            user_query = request.user_query,
-            messages=[("human", request.user_query)],
-            cart = {},
-            tool_results = {}
-        )
-
         workflow_id = str(uuid.uuid4())
+        user_id = request.user_id or "anonymous"
+        
+        initial_state = {
+            "messages": [HumanMessage(content=request.user_query)],
+            "user_id": user_id
+        }
 
         yield agent_pb2.ExecuteWorkflowResponse(
-            workflow_started = agent_pb2.WorkflowStartedEvent(workflow_id=workflow_id)
+            workflow_started=agent_pb2.WorkflowStartedEvent(workflow_id=workflow_id)
         )
 
-        last_tool_name = "unknown"
-
         try:
-            async for step in app.astream(initial_state):
-                if "agent" in step:
-                    last_message = step["agent"]["messages"][-1]
-
-                    if last_message.tool_calls:
-                        tool_call = last_message.tool_calls[0]
-                        last_tool_name = tool_call['name']
-
-                        yield agent_pb2.ExecuteWorkflowResponse(
-                            tool_started=agent_pb2.ToolStartedEvent(
-                                tool_name=tool_call['name'],
-                                # Convert the python dict to protobuf value
-                                input = python_to_protobuf_value(tool_call['args'])
-                            )
-                        )
-                    else:
-                        yield agent_pb2.ExecuteWorkflowResponse(
-                            workflow_ended=agent_pb2.WorkflowEndedEvent(
-                                final_response=last_message.content
-                            )
-                        )
-                elif "tool_executor" in step:
-                    tool_output = None
-                    for message in reversed(step["tool_executor"]["messages"]):
-                        if isinstance(message, ToolMessage):
-                            tool_output = message.content
-                            break
-
-                    # The tool just ran and we can access the tool output from the state if needed
+            async for event in app.astream_events(initial_state, version="v2"):
+                kind = event["event"]
+                
+                if kind == "on_tool_start":
+                    # Inject user_id into tool calls if the tool expects it
+                    # Note: LangGraph ReAct agent handles tool calling automatically, 
+                    # but our tools now expect user_id. We rely on the LLM to pass it 
+                    # based on the supervisor's instructions.
                     yield agent_pb2.ExecuteWorkflowResponse(
-                        tool_ended=agent_pb2.ToolEndedEvent(
-                            tool_name=last_tool_name,
-                            output = python_to_protobuf_value(tool_output)
-
+                        tool_started=agent_pb2.ToolStartedEvent(
+                            tool_name=event["name"],
+                            input=python_to_protobuf_value(event["data"].get("input"))
                         )
                     )
-        # 1. Get the user query from the request.
-        # 2. Execute your LangGraph agent with the user query.
-        # 3. As the agent executes, it will generate events.
-        # 4. For each event, create an ExecuteWorkflowResponse message and yield it.
-        #
-        # For example:
-        # yield agent_pb2.ExecuteWorkflowResponse(workflow_started=agent_pb2.WorkflowStartedEvent(workflow_id="..."))
-
+                elif kind == "on_tool_end":
+                    yield agent_pb2.ExecuteWorkflowResponse(
+                        tool_ended=agent_pb2.ToolEndedEvent(
+                            tool_name=event["name"],
+                            output=python_to_protobuf_value(event["data"].get("output"))
+                        )
+                    )
+                elif kind == "on_chat_model_end":
+                    message = event["data"]["output"]
+                    # We only stream back messages from the supervisor or when ending
+                    if not message.tool_calls and event["metadata"].get("langgraph_node") == "supervisor":
+                        yield agent_pb2.ExecuteWorkflowResponse(
+                            workflow_ended=agent_pb2.WorkflowEndedEvent(
+                                final_response=message.content
+                            )
+                        )
+                elif kind == "on_chain_error":
+                    yield agent_pb2.ExecuteWorkflowResponse(
+                        workflow_error=agent_pb2.WorkflowErrorEvent(
+                            error_message=str(event["data"].get("error"))
+                        )
+                    )
+        except Exception as e:
+            yield agent_pb2.ExecuteWorkflowResponse(
+                workflow_error=agent_pb2.WorkflowErrorEvent(error_message=str(e))
+            )
 
 async def serve():
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))

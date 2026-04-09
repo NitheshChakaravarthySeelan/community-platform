@@ -14,6 +14,7 @@ service AgentService {
 // The request message for the ExecuteWorkflow RPC.
 message ExecuteWorkflowRequest {
   string user_query = 1;
+  string user_id = 2;
 }
 
 // The response message for the ExecuteWorkflow RPC.
