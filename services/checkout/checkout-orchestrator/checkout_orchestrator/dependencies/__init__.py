@@ -17,20 +17,11 @@ async def get_saga_repository() -> SagaRepository:
     # create_saga_table is now called in main.py startup event
     return repo
 
-async def get_checkout_service(
-    db: Database = None,
-    producer: AIOKafkaProducer = None,
-    saga_repo: SagaRepository = None,
-    client: httpx.AsyncClient = None # Add client parameter
-) -> CheckoutService:
-    # Use global instances if not provided (expected in actual app run)
-    if db is None:
-        db = database
-    if producer is None:
-        producer = kafka_producer
-    if saga_repo is None:
-        saga_repo = await get_saga_repository()
-    if client is None: # Use the global httpx_client from config if not provided
-        client = httpx_client
-    
+async def get_checkout_service():
+    # Use global instances from config
+    db = database
+    producer = kafka_producer
+    saga_repo = await get_saga_repository()
+    client = httpx_client
+
     return CheckoutService(db, producer, saga_repo, client) # Pass client to CheckoutService

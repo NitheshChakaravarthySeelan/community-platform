@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 class CheckoutRequest(BaseModel):
     cart_id: str
@@ -8,5 +8,5 @@ class CheckoutRequest(BaseModel):
 
 class CheckoutResponse(BaseModel):
     success: bool
-    order_id: str | None = None
-    message: str | None = None
+    order_id: Optional[str] = None
+    message: Optional[str] = None

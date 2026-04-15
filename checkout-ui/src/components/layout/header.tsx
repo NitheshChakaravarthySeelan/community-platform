@@ -19,9 +19,9 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Suspense } from "react";
 
-// Header Component using shadcn/ui principles and better Tailwind
-export function Header() {
+function HeaderInternal() {
   const { isAuthenticated, user, logout } = useAuth();
   const { cart } = useCart();
   const router = useRouter();
@@ -38,7 +38,7 @@ export function Header() {
     } else if (searchTerm === "" && searchParams.get("q")) {
       router.push("/");
     }
-  }, [debouncedSearchTerm, router]);
+  }, [debouncedSearchTerm, router, searchTerm, searchParams]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -168,5 +168,14 @@ export function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+// Header Component using shadcn/ui principles and better Tailwind
+export function Header() {
+  return (
+    <Suspense fallback={<div className="h-14 w-full border-b bg-background" />}>
+      <HeaderInternal />
+    </Suspense>
   );
 }

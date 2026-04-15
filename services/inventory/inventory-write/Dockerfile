@@ -20,11 +20,11 @@ COPY services/inventory/inventory-write/Cargo.toml ./services/inventory/inventor
 COPY services/inventory/inventory-write/Cargo.lock ./services/inventory/inventory-write/Cargo.lock
 
 # --- Copy build script and sources ---
-# build.rs is not present in inventory-write, so we don't copy it.
+COPY services/inventory/inventory-write/build.rs ./services/inventory/inventory-write/build.rs
 COPY services/inventory/inventory-write/src ./services/inventory/inventory-write/src
 
 # --- Copy shared proto definitions ---
-COPY shared/proto /shared/proto
+COPY shared/proto ./shared/proto
 
 # --- Copy migrations ---
 COPY services/inventory/inventory-write/migrations ./services/inventory/inventory-write/migrations

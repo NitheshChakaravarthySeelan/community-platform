@@ -32,11 +32,13 @@ class CheckoutService:
         self,
         database: Database,
         producer: AIOKafkaProducer,
-        saga_repository: SagaRepository
+        saga_repository: SagaRepository,
+        client: httpx.AsyncClient = None
     ):
         self.database = database
         self.producer = producer
         self.saga_repository = saga_repository
+        self.client = client
         # These URLs would come from a config service in a real app
         self.cart_service_url = "http://localhost:3001"
         self.inventory_service_url = "http://localhost:8085"

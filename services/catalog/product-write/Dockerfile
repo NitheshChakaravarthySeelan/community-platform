@@ -2,6 +2,9 @@
 FROM maven:3.8.5-openjdk-17 AS build
 WORKDIR /app
 
+# Copy shared proto files
+COPY shared/proto /shared/proto
+
 # Copy the service's pom.xml and source
 COPY services/catalog/product-write/pom.xml ./pom.xml
 COPY services/catalog/product-write/src ./src

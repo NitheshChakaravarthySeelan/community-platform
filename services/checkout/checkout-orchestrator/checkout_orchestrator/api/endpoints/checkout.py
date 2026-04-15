@@ -11,7 +11,7 @@ router = APIRouter()
 async def checkout(
     request: CheckoutRequest,
     checkout_service: CheckoutService = Depends(get_checkout_service)
-) -> dict:
+):
     if not is_valid_uuid(request.user_id):
         raise HTTPException(status_code=400, detail="Invalid user_id format.")
     if not is_valid_uuid(request.cart_id):

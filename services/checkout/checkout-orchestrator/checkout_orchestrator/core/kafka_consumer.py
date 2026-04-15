@@ -10,13 +10,13 @@ import datetime
 from google.protobuf.timestamp_pb2 import Timestamp
 
 # Import Protobuf generated classes
-from . import common_pb2
-from . import order_service_pb2
-from . import payment_service_pb2
-from . import wallet_service_pb2
-from . import invoice_service_pb2
-from . import inventory_pb2
-from . import checkout_events_pb2
+from .. import common_pb2
+from .. import order_service_pb2
+from .. import payment_service_pb2
+from .. import wallet_service_pb2
+from .. import invoice_service_pb2
+from .. import inventory_pb2
+from .. import checkout_events_pb2
 
 logger = logging.getLogger(__name__)
 
