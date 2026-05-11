@@ -30,51 +30,53 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 public class Order {
 
-    @Id
-    // 2. Remove @GeneratedValue - UUIDs will be assigned in the service layer
-    private UUID id;
+  @Id
+  // 2. Remove @GeneratedValue - UUIDs will be assigned in the service layer
+  private UUID id;
 
-    @Column(unique = true)
-    private String sagaId;
+  @Column(unique = true)
+  private String sagaId;
 
-    @Column(nullable = false)
-    private UUID userId;
+  @Column(nullable = false)
+  private UUID userId;
 
-    @Column(nullable = false)
-    private String billingAddress; // Assuming this is a snapshot, String is okay for now
+  @Column(nullable = false)
+  private String billingAddress; // Assuming this is a snapshot, String is okay for now
 
-    private String shippingAddress;
+  private String shippingAddress;
 
-    // 3. Keep as String for now, but be aware of more advanced options
-    @Type(value = JsonStringType.class) // MODIFIED
-    private String items;
+  // 3. Keep as String for now, but be aware of more advanced options
+  @Type(value = JsonStringType.class) // MODIFIED
+  private String items;
 
-    // Corrected field names to match Java conventions
-    private Integer subtotalCents;
-    private Integer shippingCents;
-    private Integer taxCents;
-    private Integer discountCents;
+  private OrderItem[] orderItems;
 
-    @Column(nullable = false)
-    private Integer totalCents;
+  // Corrected field names to match Java conventions
+  private Integer subtotalCents;
+  private Integer shippingCents;
+  private Integer taxCents;
+  private Integer discountCents;
 
-    // 4. Use EnumType.STRING for robust enum mapping
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status;
+  @Column(nullable = false)
+  private Integer totalCents;
 
-    @Column(columnDefinition = "VARCHAR")
-    @Type(value = JsonStringType.class) // MODIFIED
-    private String paymentMethodDetails;
+  // 4. Use EnumType.STRING for robust enum mapping
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Status status;
 
-    private UUID transactionId; // Note: 'transactionId' is a better name than 'transactionID'
+  @Column(columnDefinition = "VARCHAR")
+  @Type(value = JsonStringType.class) // MODIFIED
+  private String paymentMethodDetails;
 
-    // 5. Use OffsetDateTime and automatic timestamping
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+  private UUID transactionId; // Note: 'transactionId' is a better name than 'transactionID'
 
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+  // 5. Use OffsetDateTime and automatic timestamping
+  @CreationTimestamp
+  @Column(nullable = false, updatable = false)
+  private OffsetDateTime createdAt;
+
+  @UpdateTimestamp
+  @Column(nullable = false)
+  private OffsetDateTime updatedAt;
 }
