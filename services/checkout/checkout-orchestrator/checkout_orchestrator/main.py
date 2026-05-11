@@ -85,3 +85,7 @@ async def shutdown_db_kafka():
         await config.httpx_client.aclose()
         config.httpx_client = None
     print("Disconnected from the httpx_client")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

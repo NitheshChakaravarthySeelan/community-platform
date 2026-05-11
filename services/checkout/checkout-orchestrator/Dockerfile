@@ -11,14 +11,14 @@ RUN pip install poetry-plugin-export
 ENV PATH="/root/.local/bin:$PATH"
 
 # Copy project files for poetry to use
-COPY ../../services/checkout/checkout-orchestrator/pyproject.toml ./pyproject.toml
-COPY ../../services/checkout/checkout-orchestrator/poetry.lock ./poetry.lock
+COPY services/checkout/checkout-orchestrator/pyproject.toml ./pyproject.toml
+COPY services/checkout/checkout-orchestrator/poetry.lock ./poetry.lock
 
 # Generate requirements.txt from poetry.lock
 RUN poetry export -f requirements.txt --without-hashes -o requirements.txt
 
 # Copy application code
-COPY ../../services/checkout/checkout-orchestrator/checkout_orchestrator ./checkout_orchestrator
+COPY services/checkout/checkout-orchestrator/checkout_orchestrator ./checkout_orchestrator
 
 FROM python:3.12-slim-bookworm
 

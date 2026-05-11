@@ -1,4 +1,4 @@
-import httpx # Keep httpx for now as it's still used in this version.
+import httpx 
 from databases import Database
 from aiokafka import AIOKafkaProducer
 from checkout_orchestrator.infrastructure.repositories.saga_repository import SagaRepository
@@ -32,11 +32,13 @@ class CheckoutService:
         self,
         database: Database,
         producer: AIOKafkaProducer,
-        saga_repository: SagaRepository
+        saga_repository: SagaRepository,
+        client: httpx.AsyncClient = None
     ):
         self.database = database
         self.producer = producer
         self.saga_repository = saga_repository
+        self.client = client
         # These URLs would come from a config service in a real app
         self.cart_service_url = "http://localhost:3001"
         self.inventory_service_url = "http://localhost:8085"
@@ -68,7 +70,7 @@ class CheckoutService:
             updated_at=datetime.datetime.now(datetime.timezone.utc),
         )
         await self.saga_repository.create(initial_saga_state)
-
+# Keep httpx for now as it's still used in this version.
         # Publish CheckoutInitiated event to Kafka
         # This event will kick off the first step of the saga (e.g., Inventory Reservation)
         # For simplicity, sending a dict as JSON. In real app, use Protobuf.

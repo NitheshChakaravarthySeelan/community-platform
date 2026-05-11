@@ -48,3 +48,5 @@ Thumbs.db
 .DS_Store
 /build
 /out
+
+* text=auto eol=lf

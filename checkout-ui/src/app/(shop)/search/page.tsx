@@ -1,11 +1,11 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ProductCard } from "@/components/product/product-card";
 import { Loader2 } from "lucide-react";
 
-export default function SearchPage() {
+function SearchPageInternal() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q");
   const [results, setResults] = useState<any[]>([]);
@@ -55,5 +55,17 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container py-10 text-center">Loading search...</div>
+      }
+    >
+      <SearchPageInternal />
+    </Suspense>
   );
 }

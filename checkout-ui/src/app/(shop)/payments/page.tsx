@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { apiRequest } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function PaymentsPage() {
+function PaymentsPageInternal() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -172,5 +172,17 @@ export default function PaymentsPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container py-8 text-center">Loading payment...</div>
+      }
+    >
+      <PaymentsPageInternal />
+    </Suspense>
   );
 }
