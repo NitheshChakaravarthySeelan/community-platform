@@ -24,6 +24,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
+
+	"com.community.notifications/email-service/checkout_events"
 )
 
 var (
@@ -116,8 +119,24 @@ func startKafkaConsumer() {
 			time.Sleep(5 * time.Second) // Wait before retrying
 			continue
 		}
-		// As per the LLD, just log the received notification request
-		log.Printf("[%s] KAFKA: Received notification request on partition %d at offset %d: %s", serviceName, m.Partition, m.Offset, string(m.Value))
+		// 1. Try SagaCompletedEvent
+		completedEvent := &checkout_events.SagaCompletedEvent{}
+		if err := proto.Unmarshal(m.Value, completedEvent); err == nil && completedEvent.SagaId != "" {
+			log.Printf("[%s] SUCCESS: Saga %s completed. Sending success email to user %s for order %s (Total: %d cents)", 
+				serviceName, completedEvent.SagaId, completedEvent.UserId, completedEvent.OrderId, completedEvent.TotalPriceCents)
+			continue
+		}
+
+		// 2. Try SagaFailedEvent
+		failedEvent := &checkout_events.SagaFailedEvent{}
+		if err := proto.Unmarshal(m.Value, failedEvent); err == nil && failedEvent.SagaId != "" {
+			log.Printf("[%s] FAILURE: Saga %s failed at step %s. Reason: %s. Sending failure email to user %s", 
+				serviceName, failedEvent.SagaId, failedEvent.FailedStep, failedEvent.Reason, failedEvent.UserId)
+			continue
+		}
+
+		// Fallback for other messages
+		log.Printf("[%s] KAFKA: Received unknown message on partition %d at offset %d: %s", serviceName, m.Partition, m.Offset, string(m.Value))
 	}
 }
 
@@ -148,7 +167,7 @@ func main() {
 		kafkaBrokerURL = "localhost:9092"
 	}
 	if kafkaTopic == "" {
-		kafkaTopic = "notifications"
+		kafkaTopic = "checkout.checkout-events"
 	}
 
 	ctx := context.Background()

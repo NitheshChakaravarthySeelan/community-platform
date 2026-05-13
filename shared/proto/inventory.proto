@@ -2,11 +2,55 @@ syntax = "proto3";
 
 package inventory;
 
+import "common.proto";
+
 // Service for checking and potentially managing inventory levels
 service InventoryService {
   // Checks the current stock level for a product
   rpc CheckStock(CheckStockRequest) returns (CheckStockResponse);
 }
+
+// --- Commands ---
+
+message ReserveInventoryCommand {
+  common.SagaMetadata metadata = 1;
+  string user_id = 2;
+  string order_id = 3;
+  repeated InventoryItem items = 4;
+}
+
+message ReleaseInventoryCommand {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  repeated InventoryItem items = 3;
+}
+
+message InventoryItem {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+// --- Events ---
+
+message InventoryReservedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string user_id = 3;
+}
+
+message InventoryReservationFailedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+  string user_id = 3;
+  string reason = 4;
+}
+
+message InventoryReleasedEvent {
+  common.SagaMetadata metadata = 1;
+  string order_id = 2;
+}
+
+// --- Requests/Responses ---
 
 // Request to check stock for a given product and quantity
 message CheckStockRequest {

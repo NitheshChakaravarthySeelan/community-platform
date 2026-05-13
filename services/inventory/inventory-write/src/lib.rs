@@ -14,4 +14,12 @@ pub mod catalog_events {
     include!(concat!(env!("OUT_DIR"), "/catalog_events.rs"));
 }
 
+pub mod inventory {
+    include!(concat!(env!("OUT_DIR"), "/inventory.rs"));
+}
+
+pub mod common {
+    include!(concat!(env!("OUT_DIR"), "/common.rs"));
+}
+
 

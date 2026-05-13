@@ -11,11 +11,12 @@ const getPool = () => {
   }
 
   pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT || "5432", 10), // Convert port to number, default to 5432
+    user: process.env.DB_USER || "admin",
+    host: process.env.DB_HOST || "localhost",
+    database: process.env.DB_DATABASE || "community_platform",
+    password: process.env.DB_PASSWORD || "secret",
+    port: parseInt(process.env.DB_PORT || "5432", 10),
+    connectionString: process.env.DATABASE_URL,
   });
 
   return pool;

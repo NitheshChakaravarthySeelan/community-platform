@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3004/api/:path*", // Proxy to gateway-bff
+        destination: "http://localhost:3000/api/:path*", // Proxy to gateway-bff
       },
     ];
   },

@@ -15,6 +15,9 @@ message CartItem {
 message Cart {
   string user_id = 1;
   repeated CartItem items = 2;
+  int64 total_price_cents = 3;
+  int64 total_discount_cents = 4;
+  int64 total_tax_cents = 5;
 }
 
 // --- CartService Definition ---

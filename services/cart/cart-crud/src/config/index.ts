@@ -13,7 +13,7 @@ const config = {
   rabbitmqUrl: process.env.RABBITMQ_URL || "amqp://localhost",
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
   nodeEnv: process.env.NODE_ENV || "development",
-  productReadGrpcUrl: process.env.PRODUCT_READ_GRPC_URL || "localhost:50051",
+  productReadGrpcUrl: process.env.PRODUCT_READ_GRPC_URL || "localhost:9091",
   inventoryReadGrpcUrl:
     process.env.INVENTORY_READ_GRPC_URL || "localhost:50052",
   discountEngineUrl: process.env.DISCOUNT_ENGINE_URL || "http://localhost:8080",

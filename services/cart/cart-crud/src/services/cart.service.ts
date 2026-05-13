@@ -28,9 +28,9 @@ export class CartService {
 
   async addItem(
     userId: string,
-    productId: string, // Changed to string to match product.proto
+    productId: string,
     quantity: number,
-  ): Promise<Cart> {
+  ): Promise<CartDetails> {
     if (quantity <= 0) {
       throw new Error("Quantity must be positive.");
     }
@@ -74,7 +74,8 @@ export class CartService {
       cart.items.push(itemToAdd);
     }
     cart.updatedAt = new Date();
-    return this.cartRepository.save(cart);
+    await this.cartRepository.save(cart);
+    return (await this.getCart(userId))!;
   }
 
   async getCart(userId: string): Promise<CartDetails | null> {
@@ -145,9 +146,9 @@ export class CartService {
 
   async updateItemQuantity(
     userId: string,
-    productId: string, // Changed to string
+    productId: string,
     quantity: number,
-  ): Promise<Cart> {
+  ): Promise<CartDetails> {
     if (quantity <= 0) {
       return this.removeItem(userId, productId);
     }
@@ -174,10 +175,11 @@ export class CartService {
     }
     cart.items[itemIndex]!.quantity = quantity;
     cart.updatedAt = new Date();
-    return this.cartRepository.save(cart);
+    await this.cartRepository.save(cart);
+    return (await this.getCart(userId))!;
   }
 
-  async removeItem(userId: string, productId: string): Promise<Cart> {
+  async removeItem(userId: string, productId: string): Promise<CartDetails> {
     // Changed to string
     const cart = await this.getOrCreateCart(userId);
     const initialLength = cart.items.length;
@@ -187,7 +189,8 @@ export class CartService {
       throw new Error("Item not found in cart.");
     }
     cart.updatedAt = new Date();
-    return this.cartRepository.save(cart);
+    await this.cartRepository.save(cart);
+    return (await this.getCart(userId))!;
   }
 
   async clearCartByUserId(userId: string): Promise<void> {
