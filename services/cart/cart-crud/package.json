@@ -12,6 +12,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node dist/index.js",
+    "dev": "ts-node-dev src/index.ts",
     "proto:gen": "grpc_tools_node_protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/proto --ts_proto_opt=esModuleInterop=true,forceLong=String,useEnumNames=true,outputServices=grpc-js,importSuffix=.js,useProtobufjs=false,outputJsonMethods=true --proto_path=../../../shared/proto ../../../shared/proto/cart.proto ../../../shared/proto/product.proto ../../../shared/proto/product_read_service.proto ../../../shared/proto/inventory.proto"
   },
   "keywords": [],

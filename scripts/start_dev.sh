@@ -2,10 +2,21 @@
 
 # CheckoutX Native Startup Script
 # Starts all services in the background. 
-# Prerequisites: Ensure 'make infra-up' is running for Postgres/Kafka/Redis.
+# Prerequisites: Ensure 'make tools-up' is running for Postgres/Kafka/Redis.
 
-LOG_DIR=".logs"
-mkdir -p $LOG_DIR
+# --- Native Dev Environment Variables ---
+export KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+export DATABASE_URL=postgresql://admin:secret@localhost:5432/community_platform
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/community_platform
+export SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+export SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=localhost:29092
+export SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=localhost:29092
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+# --- End Env Vars ---
+
+LOG_DIR="$(pwd)/.logs"
+mkdir -p "$LOG_DIR"
 
 echo "🚀 Starting CheckoutX Services Natively..."
 
@@ -17,10 +28,10 @@ start_service() {
     local name=$3
 
     echo "  -> Starting $name..."
-    cd $dir
-    nohup $cmd > "../../$LOG_DIR/$name.log" 2>&1 &
+    cd "$dir"
+    nohup $cmd > "$LOG_DIR/$name.log" 2>&1 &
     # Store PID for later shutdown
-    echo $! > "../../$LOG_DIR/$name.pid"
+    echo $! > "$LOG_DIR/$name.pid"
     cd - > /dev/null
 }
 
@@ -43,22 +54,22 @@ start_service "services/inventory/inventory-write" "cargo run" "inventory-write"
 start_service "services/inventory/inventory-read" "cargo run" "inventory-read"
 
 # 7. Auth Service (Java)
-start_service "services/users/auth-service" "./mvnw spring-boot:run" "auth-service"
+start_service "services/users/auth-service" "mvn spring-boot:run" "auth-service"
 
 # 8. User Service (Java)
-start_service "services/users/user-service" "./mvnw spring-boot:run" "user-service"
+start_service "services/users/user-service" "mvn spring-boot:run" "user-service"
 
 # 9. Product Read (Java)
-start_service "services/catalog/product-read" "./mvnw spring-boot:run" "product-read"
+start_service "services/catalog/product-read" "mvn spring-boot:run" "product-read"
 
 # 10. Product Write (Java)
-start_service "services/catalog/product-write" "./mvnw spring-boot:run" "product-write"
+start_service "services/catalog/product-write" "mvn spring-boot:run" "product-write"
 
 # 11. Payment Gateway (Java)
-start_service "services/orders/payment-gateway" "./mvnw spring-boot:run" "payment-gateway"
+start_service "services/orders/payment-gateway" "mvn spring-boot:run" "payment-gateway"
 
 # 12. Order Create (Java)
-start_service "services/orders/order-create" "./mvnw spring-boot:run" "order-create"
+start_service "services/orders/order-create" "mvn spring-boot:run" "order-create"
 
 echo ""
 echo "✅ All services started in the background."

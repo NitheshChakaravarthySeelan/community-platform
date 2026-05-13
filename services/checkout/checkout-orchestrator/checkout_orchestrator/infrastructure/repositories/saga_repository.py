@@ -15,8 +15,8 @@ class SagaRepository:
             state VARCHAR(255) NOT NULL,
             context TEXT NOT NULL,
             processed_event_ids TEXT DEFAULT '[]' NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
         );
         """
         await self.database.execute(query)

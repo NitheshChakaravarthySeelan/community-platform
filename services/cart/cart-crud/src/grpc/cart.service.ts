@@ -57,7 +57,7 @@ export class CartGrpcService {
       );
       const response: CartResponse = {
         cart: {
-          userId: cart.userId.toString(), // Convert back to string for proto
+          userId: cart.userId.toString(),
           items: cart.items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -65,6 +65,9 @@ export class CartGrpcService {
             priceCents: item.priceCents || 0,
             imageUrl: item.imageUrl || "",
           })),
+          totalPriceCents: cart.totalPriceCents || 0,
+          totalDiscountCents: cart.totalDiscountCents || 0,
+          totalTaxCents: cart.totalTaxCents || 0,
         },
       };
       callback(null, response);
@@ -112,6 +115,9 @@ export class CartGrpcService {
             priceCents: item.priceCents || 0,
             imageUrl: item.imageUrl || "",
           })),
+          totalPriceCents: cart.totalPriceCents || 0,
+          totalDiscountCents: cart.totalDiscountCents || 0,
+          totalTaxCents: cart.totalTaxCents || 0,
         },
       };
       callback(null, response);
@@ -155,6 +161,9 @@ export class CartGrpcService {
             priceCents: item.priceCents || 0,
             imageUrl: item.imageUrl || "",
           })),
+          totalPriceCents: cart.totalPriceCents || 0,
+          totalDiscountCents: cart.totalDiscountCents || 0,
+          totalTaxCents: cart.totalTaxCents || 0,
         },
       };
       callback(null, response);
@@ -195,6 +204,9 @@ export class CartGrpcService {
             priceCents: item.priceCents || 0,
             imageUrl: item.imageUrl || "",
           })),
+          totalPriceCents: cartDetails.totalPriceCents || 0,
+          totalDiscountCents: cartDetails.totalDiscountCents || 0,
+          totalTaxCents: cartDetails.totalTaxCents || 0,
         },
       };
       callback(null, response);

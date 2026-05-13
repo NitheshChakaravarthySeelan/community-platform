@@ -38,6 +38,9 @@ export interface CartItem {
 export interface Cart {
   userId: string;
   items: CartItem[];
+  totalPriceCents: number;
+  totalDiscountCents: number;
+  totalTaxCents: number;
 }
 
 export interface AddItemToCartRequest {
@@ -201,7 +204,13 @@ export const CartItem = {
 };
 
 function createBaseCart(): Cart {
-  return { userId: "", items: [] };
+  return {
+    userId: "",
+    items: [],
+    totalPriceCents: 0,
+    totalDiscountCents: 0,
+    totalTaxCents: 0,
+  };
 }
 
 export const Cart = {
@@ -211,6 +220,15 @@ export const Cart = {
     }
     for (const v of message.items) {
       CartItem.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.totalPriceCents !== 0) {
+      writer.uint32(24).int64(message.totalPriceCents);
+    }
+    if (message.totalDiscountCents !== 0) {
+      writer.uint32(32).int64(message.totalDiscountCents);
+    }
+    if (message.totalTaxCents !== 0) {
+      writer.uint32(40).int64(message.totalTaxCents);
     }
     return writer;
   },
@@ -237,6 +255,27 @@ export const Cart = {
 
           message.items.push(CartItem.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.totalPriceCents = longToNumber(reader.int64() as Long);
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.totalDiscountCents = longToNumber(reader.int64() as Long);
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.totalTaxCents = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -252,6 +291,15 @@ export const Cart = {
       items: globalThis.Array.isArray(object?.items)
         ? object.items.map((e: any) => CartItem.fromJSON(e))
         : [],
+      totalPriceCents: isSet(object.totalPriceCents)
+        ? globalThis.Number(object.totalPriceCents)
+        : 0,
+      totalDiscountCents: isSet(object.totalDiscountCents)
+        ? globalThis.Number(object.totalDiscountCents)
+        : 0,
+      totalTaxCents: isSet(object.totalTaxCents)
+        ? globalThis.Number(object.totalTaxCents)
+        : 0,
     };
   },
 
@@ -263,6 +311,15 @@ export const Cart = {
     if (message.items?.length) {
       obj.items = message.items.map((e) => CartItem.toJSON(e));
     }
+    if (message.totalPriceCents !== 0) {
+      obj.totalPriceCents = Math.round(message.totalPriceCents);
+    }
+    if (message.totalDiscountCents !== 0) {
+      obj.totalDiscountCents = Math.round(message.totalDiscountCents);
+    }
+    if (message.totalTaxCents !== 0) {
+      obj.totalTaxCents = Math.round(message.totalTaxCents);
+    }
     return obj;
   },
 
@@ -273,6 +330,9 @@ export const Cart = {
     const message = createBaseCart();
     message.userId = object.userId ?? "";
     message.items = object.items?.map((e) => CartItem.fromPartial(e)) || [];
+    message.totalPriceCents = object.totalPriceCents ?? 0;
+    message.totalDiscountCents = object.totalDiscountCents ?? 0;
+    message.totalTaxCents = object.totalTaxCents ?? 0;
     return message;
   },
 };

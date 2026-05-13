@@ -45,26 +45,11 @@ export async function POST(request: NextRequest) {
 
     const cart = cartResponse.cart;
 
-    // --- Temporary Workaround: Recalculate pricing in gateway-bff ---
-    // This is because the Cart proto does not contain totalPriceCents etc.
-    // The long-term solution is to update cart.proto to include these fields.
-    const calculatedSubtotalCents = cart.items.reduce((total, item) => {
-      return total + item.priceCents * item.quantity;
-    }, 0);
-    // For now, assume no discounts/taxes are calculated directly by gateway-bff for Kafka event
-    const calculatedTotalDiscountCents = 0; // Placeholder
-    const calculatedTotalTaxCents = 0; // Placeholder
-    const calculatedTotalPriceCents =
-      calculatedSubtotalCents -
-      calculatedTotalDiscountCents +
-      calculatedTotalTaxCents;
-    // --- End Temporary Workaround ---
-
     // Construct CheckoutInitiatedEventPayload
     const payload = {
       saga_id: saga_id,
       user_id: userId,
-      cart_id: cart.userId, // Using userId as cartId for now, based on cart model
+      cart_id: cart.userId, // Using userId as cartId for now
       items: cart.items.map((item) => ({
         product_id: item.productId,
         quantity: item.quantity,
@@ -72,9 +57,9 @@ export async function POST(request: NextRequest) {
         name: item.name,
         image_url: item.imageUrl,
       })),
-      total_price_cents: calculatedTotalPriceCents,
-      total_discount_cents: calculatedTotalDiscountCents,
-      total_tax_cents: calculatedTotalTaxCents,
+      total_price_cents: cart.totalPriceCents,
+      total_discount_cents: cart.totalDiscountCents,
+      total_tax_cents: cart.totalTaxCents,
     };
 
     await publishCheckoutInitiatedEvent(payload);

@@ -29,3 +29,19 @@ message InventoryReservationFailedEvent {
   string reason = 4;
   google.protobuf.Timestamp timestamp = 5;
 }
+
+message SagaCompletedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string order_id = 3;
+  int64 total_price_cents = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message SagaFailedEvent {
+  string saga_id = 1;
+  string user_id = 2;
+  string reason = 3;
+  string failed_step = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}

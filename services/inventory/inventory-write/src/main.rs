@@ -42,9 +42,10 @@ async fn main() -> std::io::Result<()> {
 
     let inventory_service = InventoryService::new(pool.clone());
 
-    // --- Kafka Consumer Setup ---
     let product_events_topic =
         env::var("PRODUCT_EVENTS_TOPIC").unwrap_or_else(|_| "product-events".to_string());
+    let inventory_command_topic = env::var("INVENTORY_COMMAND_TOPIC")
+        .unwrap_or_else(|_| "checkout.inventory-command".to_string());
     let checkout_events_topic = env::var("CHECKOUT_EVENTS_TOPIC")
         .unwrap_or_else(|_| "checkout.checkout-events".to_string());
     let kafka_group_id =
@@ -52,9 +53,10 @@ async fn main() -> std::io::Result<()> {
 
     let pool_clone = pool.clone();
     tokio::spawn(async move {
-        kafka_consumer::run_kafka_consumer(
+        let _ = kafka_consumer::run_kafka_consumer(
             pool_clone,
             &product_events_topic,
+            &inventory_command_topic,
             &checkout_events_topic,
             &kafka_group_id,
         )
